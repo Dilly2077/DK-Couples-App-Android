@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
@@ -32,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,12 +47,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dk.together.content.EveluneContentBank
+import com.dk.together.data.EveluneStore
+import com.dk.together.data.LocalActor
 import com.dk.together.ui.theme.EveluneBackground
 import com.dk.together.ui.theme.EveluneCard
 import com.dk.together.ui.theme.EveluneInk
@@ -63,30 +69,75 @@ private enum class Artwork { MOUNTAINS, CARDS, NOTE, MUGS }
 
 @Composable
 fun EveluneApp() {
+    val context = LocalContext.current
+    val store = remember { EveluneStore(context) }
     var selected by remember { mutableIntStateOf(0) }
+    var refreshKey by remember { mutableIntStateOf(0) }
+    var actor by remember { mutableStateOf(store.currentActor) }
+    var destination by remember { mutableStateOf<ContentDestination?>(null) }
     val labels = listOf("Home", "Explore", "Discuss", "Timeline", "Us")
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = EveluneBackground,
         bottomBar = {
-            EveluneBottomBar(
-                selected = selected,
-                labels = labels,
-                onSelect = { selected = it }
-            )
+            if (destination == null) {
+                EveluneBottomBar(
+                    selected = selected,
+                    labels = labels,
+                    onSelect = { selected = it }
+                )
+            }
         }
     ) { innerPadding ->
-        if (selected == 0) {
-            HomeUi(modifier = Modifier.padding(innerPadding))
+        val open = destination
+        if (open != null) {
+            Box(Modifier.padding(innerPadding)) {
+                ContentDetailUi(
+                    destination = open,
+                    store = store,
+                    actor = actor,
+                    refreshKey = refreshKey,
+                    onSaved = { refreshKey++ },
+                    onBack = { destination = null },
+                )
+            }
         } else {
-            PlaceholderUi(labels[selected], modifier = Modifier.padding(innerPadding))
+            when (selected) {
+                0 -> HomeUi(store, actor, refreshKey, { destination = it }, Modifier.padding(innerPadding))
+                1 -> ExploreUi(store, actor, refreshKey, { destination = it }, Modifier.padding(innerPadding).statusBarsPadding())
+                2 -> DiscussUi(store, refreshKey, { destination = it }, Modifier.padding(innerPadding).statusBarsPadding())
+                3 -> TimelineUi(store, refreshKey, Modifier.padding(innerPadding).statusBarsPadding())
+                else -> UsUi(
+                    store = store,
+                    actor = actor,
+                    onActorChanged = {
+                        actor = it
+                        store.currentActor = it
+                        refreshKey++
+                    },
+                    modifier = Modifier.padding(innerPadding).statusBarsPadding(),
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun HomeUi(modifier: Modifier = Modifier) {
+private fun HomeUi(
+    store: EveluneStore,
+    actor: LocalActor,
+    refreshKey: Int,
+    onOpen: (ContentDestination) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val question = EveluneContentBank.todayQuestion()
+    val card = EveluneContentBank.todayCard()
+    val challenge = EveluneContentBank.todayChallenge()
+    val qDone = remember(refreshKey, actor, question.id) { store.completedBy(question.id, EveluneStore.TYPE_QUESTION, actor) != null }
+    val cDone = remember(refreshKey, actor, card.id) { store.completedBy(card.id, EveluneStore.TYPE_CARD, actor) != null }
+    val chDone = remember(refreshKey, actor, challenge.id) { store.completedBy(challenge.id, EveluneStore.TYPE_CHALLENGE, actor) != null }
+
     Box(modifier = modifier.fillMaxSize().background(EveluneBackground)) {
         SoftBackdrop()
         LazyColumn(
@@ -100,33 +151,42 @@ private fun HomeUi(modifier: Modifier = Modifier) {
                 ActivityCard(
                     label = "DAILY QUESTION",
                     icon = "?",
-                    title = "What’s a goal you’d love to achieve together?",
-                    artwork = Artwork.MOUNTAINS
+                    title = question.prompt,
+                    artwork = Artwork.MOUNTAINS,
+                    completed = qDone,
+                    onClick = { onOpen(ContentDestination(EveluneStore.TYPE_QUESTION, question.id)) },
                 )
             }
             item {
                 ActivityCard(
                     label = "DAILY GAME",
                     icon = "✦",
-                    title = "Two Truths & a Dream",
-                    subtitle = "See what you discover.",
-                    artwork = Artwork.CARDS
+                    title = "Pixel games",
+                    subtitle = "Coming in the next stage.",
+                    artwork = Artwork.CARDS,
+                    completed = false,
+                    onClick = null,
                 )
             }
             item {
                 ActivityCard(
                     label = "DAILY CARD",
                     icon = "▣",
-                    title = "A kinder way to handle conflict",
-                    artwork = Artwork.NOTE
+                    title = card.title,
+                    subtitle = "4 prompts · rate 1–4",
+                    artwork = Artwork.NOTE,
+                    completed = cDone,
+                    onClick = { onOpen(ContentDestination(EveluneStore.TYPE_CARD, card.id)) },
                 )
             }
             item {
                 ActivityCard(
                     label = "DAILY CHALLENGE",
                     icon = "◎",
-                    title = "Try something new together this week",
-                    artwork = Artwork.MUGS
+                    title = EveluneContentBank.render(challenge.prompt, store.partnerName),
+                    artwork = Artwork.MUGS,
+                    completed = chDone,
+                    onClick = { onOpen(ContentDestination(EveluneStore.TYPE_CHALLENGE, challenge.id)) },
                 )
             }
         }
@@ -149,11 +209,7 @@ private fun PartnerNote() {
         ) {
             CoupleAvatar()
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    "A note from your partner",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = EveluneMuted
-                )
+                Text("A note from your partner", style = MaterialTheme.typography.labelMedium, color = EveluneMuted)
                 Text(
                     "You make life brighter just by being you. ♥",
                     style = MaterialTheme.typography.titleMedium,
@@ -181,24 +237,8 @@ private fun CoupleAvatar() {
             val rose = Color(0xFFD97B82)
             drawCircle(burgundy, radius = size.minDimension * .11f, center = Offset(size.width * .35f, size.height * .28f))
             drawCircle(rose, radius = size.minDimension * .11f, center = Offset(size.width * .65f, size.height * .28f))
-            drawArc(
-                color = burgundy,
-                startAngle = 205f,
-                sweepAngle = 130f,
-                useCenter = false,
-                topLeft = Offset(size.width * .14f, size.height * .28f),
-                size = Size(size.width * .52f, size.height * .52f),
-                style = Stroke(width = size.minDimension * .10f, cap = StrokeCap.Round)
-            )
-            drawArc(
-                color = rose,
-                startAngle = 205f,
-                sweepAngle = 130f,
-                useCenter = false,
-                topLeft = Offset(size.width * .34f, size.height * .28f),
-                size = Size(size.width * .52f, size.height * .52f),
-                style = Stroke(width = size.minDimension * .10f, cap = StrokeCap.Round)
-            )
+            drawArc(burgundy, 205f, 130f, false, Offset(size.width * .14f, size.height * .28f), Size(size.width * .52f, size.height * .52f), style = Stroke(width = size.minDimension * .10f, cap = StrokeCap.Round))
+            drawArc(rose, 205f, 130f, false, Offset(size.width * .34f, size.height * .28f), Size(size.width * .52f, size.height * .52f), style = Stroke(width = size.minDimension * .10f, cap = StrokeCap.Round))
         }
     }
 }
@@ -211,21 +251,9 @@ private fun HeroSection() {
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Text("Welcome back", fontSize = 15.sp, color = EveluneRoseDeep, fontWeight = FontWeight.SemiBold)
-            Text(
-                "Better together",
-                fontSize = 41.sp,
-                lineHeight = 44.sp,
-                color = EveluneRoseDeep,
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.Bold
-            )
+            Text("Better together", fontSize = 41.sp, lineHeight = 44.sp, color = EveluneRoseDeep, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold)
             Box(modifier = Modifier.padding(top = 4.dp).size(width = 42.dp, height = 2.dp).background(EveluneRose))
-            Text(
-                "Same team. Brighter days.",
-                modifier = Modifier.padding(top = 5.dp),
-                style = MaterialTheme.typography.bodyLarge,
-                color = EveluneMuted
-            )
+            Text("Same team. Brighter days.", modifier = Modifier.padding(top = 5.dp), style = MaterialTheme.typography.bodyLarge, color = EveluneMuted)
         }
         HeartLineArt(modifier = Modifier.align(Alignment.CenterEnd).size(135.dp))
     }
@@ -242,11 +270,7 @@ private fun HeartLineArt(modifier: Modifier = Modifier) {
             cubicTo(size.width * .51f, size.height * .19f, size.width * .33f, size.height * .12f, size.width * .28f, size.height * .28f)
             cubicTo(size.width * .24f, size.height * .43f, size.width * .42f, size.height * .58f, size.width * .68f, size.height * .71f)
         }
-        drawPath(
-            path = p,
-            color = EveluneRose.copy(alpha = .8f),
-            style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round)
-        )
+        drawPath(p, EveluneRose.copy(alpha = .8f), style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round))
     }
 }
 
@@ -256,19 +280,20 @@ private fun ActivityCard(
     icon: String,
     title: String,
     artwork: Artwork,
-    subtitle: String? = null
+    subtitle: String? = null,
+    completed: Boolean = false,
+    onClick: (() -> Unit)? = null,
 ) {
     Surface(
+        onClick = { onClick?.invoke() },
+        enabled = onClick != null,
         modifier = Modifier.fillMaxWidth(),
         color = EveluneCard,
         shape = RoundedCornerShape(28.dp),
         shadowElevation = 1.dp,
         tonalElevation = 0.dp
     ) {
-        Row(
-            modifier = Modifier.height(154.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.height(154.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(
                 modifier = Modifier.weight(1f).padding(start = 18.dp, end = 12.dp, top = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -280,37 +305,21 @@ private fun ActivityCard(
                         }
                     }
                     Text(label, style = MaterialTheme.typography.labelLarge, color = EveluneRoseDeep, letterSpacing = .5.sp)
+                    if (completed) Icon(Icons.Filled.CheckCircle, contentDescription = "Completed", tint = EveluneRoseDeep, modifier = Modifier.size(18.dp))
                 }
                 Spacer(Modifier.height(1.dp))
-                Text(
-                    title,
-                    fontSize = 23.sp,
-                    lineHeight = 27.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = EveluneInk,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (subtitle != null) {
-                    Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = EveluneMuted)
-                }
+                Text(title, fontSize = 22.sp, lineHeight = 26.sp, fontWeight = FontWeight.Medium, color = EveluneInk, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = EveluneMuted)
             }
             Box(
-                modifier = Modifier
-                    .padding(end = 8.dp, top = 8.dp, bottom = 8.dp)
-                    .fillMaxWidth(.38f)
-                    .height(138.dp)
-                    .clip(RoundedCornerShape(24.dp))
+                modifier = Modifier.padding(end = 8.dp, top = 8.dp, bottom = 8.dp).fillMaxWidth(.38f).height(138.dp).clip(RoundedCornerShape(24.dp))
             ) {
                 CardArtwork(artwork)
-                Surface(
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(11.dp),
-                    shape = CircleShape,
-                    color = Color(0xFFFFF8F6).copy(alpha = .95f),
-                    shadowElevation = 2.dp
-                ) {
-                    Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
-                        Text("›", fontSize = 34.sp, color = EveluneRoseDeep, fontWeight = FontWeight.Light)
+                if (onClick != null) {
+                    Surface(modifier = Modifier.align(Alignment.BottomEnd).padding(11.dp), shape = CircleShape, color = Color(0xFFFFF8F6).copy(alpha = .95f), shadowElevation = 2.dp) {
+                        Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                            Text("›", fontSize = 34.sp, color = EveluneRoseDeep, fontWeight = FontWeight.Light)
+                        }
                     }
                 }
             }
@@ -374,26 +383,12 @@ private fun CardsArtwork() {
 @Composable
 private fun NoteArtwork() {
     Box(
-        modifier = Modifier.fillMaxSize().background(
-            Brush.linearGradient(listOf(Color(0xFFE7CAC0), Color(0xFFD8B0A5), Color(0xFFF0DDD2)))
-        ),
+        modifier = Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFFE7CAC0), Color(0xFFD8B0A5), Color(0xFFF0DDD2)))),
         contentAlignment = Alignment.Center
     ) {
-        Surface(
-            modifier = Modifier.size(width = 104.dp, height = 112.dp),
-            shape = RoundedCornerShape(6.dp),
-            color = Color(0xFFFFF8F0),
-            shadowElevation = 4.dp
-        ) {
+        Surface(modifier = Modifier.size(width = 104.dp, height = 112.dp), shape = RoundedCornerShape(6.dp), color = Color(0xFFFFF8F0), shadowElevation = 4.dp) {
             Box(contentAlignment = Alignment.Center) {
-                Text(
-                    "Progress\nover\nperfection\n♡",
-                    color = Color(0xFF6D4B49),
-                    fontFamily = FontFamily.Serif,
-                    fontStyle = FontStyle.Italic,
-                    fontSize = 16.sp,
-                    lineHeight = 20.sp
-                )
+                Text("1 · 2 · 3 · 4\nHow true?\n♡", color = Color(0xFF6D4B49), fontFamily = FontFamily.Serif, fontStyle = FontStyle.Italic, fontSize = 16.sp, lineHeight = 20.sp)
             }
         }
     }
@@ -408,24 +403,8 @@ private fun MugsArtwork() {
             val w = size.width * .27f
             val h = size.height * .30f
             drawRoundRect(color, Offset(left, top), Size(w, h), CornerRadius(10.dp.toPx()))
-            drawArc(
-                color = color,
-                startAngle = -80f,
-                sweepAngle = 160f,
-                useCenter = false,
-                topLeft = Offset(left + w * .78f, top + h * .13f),
-                size = Size(w * .52f, h * .58f),
-                style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round)
-            )
-            drawArc(
-                color = Color(0xFFFFF2EA),
-                startAngle = 220f,
-                sweepAngle = 95f,
-                useCenter = false,
-                topLeft = Offset(left + w * .28f, top - h * .42f),
-                size = Size(w * .28f, h * .50f),
-                style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-            )
+            drawArc(color, -80f, 160f, false, Offset(left + w * .78f, top + h * .13f), Size(w * .52f, h * .58f), style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round))
+            drawArc(Color(0xFFFFF2EA), 220f, 95f, false, Offset(left + w * .28f, top - h * .42f), Size(w * .28f, h * .50f), style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
         }
         mug(.20f, Color(0xFFD37E73))
         mug(.49f, Color(0xFFB85D61))
@@ -463,11 +442,7 @@ private fun EveluneBottomBar(selected: Int, labels: List<String>, onSelect: (Int
                     3 -> Icons.Filled.DateRange
                     else -> Icons.Filled.Favorite
                 }
-                Surface(
-                    onClick = { onSelect(index) },
-                    color = Color.Transparent,
-                    shape = RoundedCornerShape(18.dp)
-                ) {
+                Surface(onClick = { onSelect(index) }, color = Color.Transparent, shape = RoundedCornerShape(18.dp)) {
                     Column(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -478,20 +453,6 @@ private fun EveluneBottomBar(selected: Int, labels: List<String>, onSelect: (Int
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun PlaceholderUi(title: String, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxSize().background(EveluneBackground)) {
-        SoftBackdrop()
-        Column(
-            modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(title, fontFamily = FontFamily.Serif, fontSize = 38.sp, fontWeight = FontWeight.Bold, color = EveluneRoseDeep)
-            Text("This section will be designed after the home experience is locked in.", style = MaterialTheme.typography.bodyLarge, color = EveluneMuted)
         }
     }
 }
