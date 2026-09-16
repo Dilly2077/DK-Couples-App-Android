@@ -1,68 +1,62 @@
-# CHECKPOINT — DK Together V0.2
+# CHECKPOINT — DK Together V0.3
+
+## Product focus
+
+V0.3 deliberately narrows the app back to the Paired-style couples core. The earlier pet and Fruit Merge prototypes were too rough to justify keeping in the main experience. Shared pets and arcade games are deferred until they can be rebuilt with proper art/animation/physics.
 
 ## Implemented
 
-- Buildable Android project targeting modern Android.
-- Reworked higher-contrast purple/lilac design system with brighter text, clearer card separation and less visual clutter.
-- Cleaner Home, Explore and Together screen hierarchy plus polished bottom navigation.
-- Original adaptive launcher icon with monochrome themed-icon layer.
-- Android 12+ branded launch splash using the new icon.
-- Onboarding for two names and relationship start date.
-- 100 bundled original questions.
-- 50 bundled original date ideas.
-- Daily question answer persistence and rewards.
-- This-or-That quick game and daily challenge loop.
-- New playable Fruit Merge mini-game with stacking/merging, scoring and shared-history score banking.
-- Local demo-partner switch so both sides can be exercised on one phone.
-- Mood and status updates.
-- Expanded shared virtual pet world with five needs, gradual need decay and contextual thought bubbles.
-- Animated in-app pet movement.
-- Four pet environments: Living room, Kitchen, Bathroom and Outdoors.
-- Context-sensitive pet care actions including feeding, treats, washing, splashing, playing, cuddling, naps and exploring.
-- Pet room changes and care actions saved into the shared activity history.
-- Hearts currency.
-- Couple widget note composer/history.
-- Android couple home-screen widget showing names, days together and latest note.
-- New dedicated shared-pet home-screen widget with pet sprite, room, thought bubble and need summary.
-- Pet widget supports direct Feed, Wash and Play actions which also persist back into app state.
-- Memory creation and complete chronological interaction timeline.
-- Room interaction database.
-- DataStore profile/pet/preferences storage.
-- Relationship time breakdown and 70 BPM heartbeat estimate labelled as an estimate.
-- Local descriptive insights.
-- Unit tests for relationship calculations plus pet decay/thought logic.
-- GitHub Actions workflow that tests, builds and uploads the debug APK.
+- High-contrast cream/lilac Compose design with clearer reading hierarchy and less clutter.
+- Five core destinations: Home, Explore, Discuss, Dates and Us.
+- Onboarding for both names and relationship start date.
+- Home-screen sticky-note flow with a real Android widget.
+- Separate Android daily-question widget.
+- Latest note from the other partner shown prominently on Home.
+- Daily private question with two-sided answer locking: neither partner's answer is revealed until both have replied.
+- Three deterministic daily conversation cards using the same lock/reveal protocol.
+- Five-round `Guess Me` game: each partner chooses an A/B preference and predicts the other partner's choice; scores reveal only after both complete all rounds.
+- Searchable Explore library for Questions, Cards and Games.
+- Large original question/content bank spanning everyday life, humour, memories, values, future, communication, conflict, support, money, home, family/friends, trust/boundaries, affection, intimacy, consensual adult sex/pleasure, growth, long distance and commitment.
+- Mature content includes opt-in-style prompts around desire, foreplay, orgasm/climaxing, sexual feedback, boundaries, aftercare and performance pressure. Content is original and not copied from Paired.
+- Discuss screen shows only mutually unlocked question/card answers, note history and completed game results.
+- Dates screen starts empty and only contains dates explicitly added by a user.
+- Removed fake/pre-filled status/mood/note/currency values from active UI.
+- Local two-side testing mode for exercising partner flows on one device.
+- Room interaction database and DataStore profile/preferences.
+- Adaptive/round/themed launcher icon and branded Android splash.
+- GitHub Actions runs unit tests, assembles a debug APK and uploads `DKTogether-v0.3-debug-apk`.
 
-## Platform limitation to remember
+## Intentionally removed/deferred from active product
 
-Android apps cannot force Pixel Launcher to place a newly sideloaded app icon onto the Home screen or automatically navigate the launcher to its location after installation. That behaviour belongs to the launcher/install source and user settings. The app now correctly provides a launcher activity, adaptive/round/themed icons and a proper splash screen, which is the app-controlled part of the install/launch experience.
+- Pet need bars and pet rooms.
+- Pet home-screen widget.
+- Prototype Fruit Merge game.
+- Hearts/reward economy in the active UI.
+- Mood/status prototype.
+- Broad fake activity/timeline entries.
 
-## Not implemented yet
+The model/store still retains some pet-compatible data structures so a later migration can be easier, but no pet experience is exposed in V0.3.
 
-- Real two-device accounts or pairing.
-- Remote sync / E2EE. The current Partner Mode is local simulation only.
+## Still not implemented
+
+- Real two-device accounts/pairing.
+- Remote synchronisation / encrypted relationship space.
 - Push notifications.
-- Photo uploads and doodles.
-- Rich configurable photo/status widgets.
-- Continuous animated movement inside Android home-screen widgets (standard RemoteViews widgets are snapshot/action surfaces rather than a continuously rendered game scene).
-- Full quizzes and two-device answer reveal protocol.
-- Multiple pet species, growth stages, inventory, clothing and room decoration.
-- More arcade/competitive mini-games and leaderboards.
-- Guided journeys and achievements.
-- Shared calendar.
-- Astrology input/content beyond the reserved entertainment section.
+- Partner device widget updates over the network.
+- Photo/doodle widgets.
+- Production-grade shared pets with illustrated sprites, real environments, animation/state machines, inventory and room interactions.
+- Physics-based arcade games such as a proper falling/merging fruit game.
+- Production release signing / Play Store distribution.
 
 ## Important locations
 
-- `app/src/main/java/com/dk/together/ui/` — Compose UI and ViewModel.
-- `app/src/main/java/com/dk/together/ui/screens/TogetherScreen.kt` — animated pet world and care UI.
-- `app/src/main/java/com/dk/together/ui/screens/ExploreScreen.kt` — Fruit Merge and couple activities.
-- `app/src/main/java/com/dk/together/data/` — Room/DataStore/repository.
-- `app/src/main/java/com/dk/together/widget/` — couple and shared-pet widgets.
-- `app/src/main/res/layout/pet_widget.xml` — interactive pet widget layout.
-- `app/src/main/res/drawable/ic_launcher_foreground.xml` — launcher artwork.
-- `app/src/main/assets/questions.json` — original prompt library.
-- `app/src/main/assets/date_ideas.json` — date idea library.
+- `app/src/main/java/com/dk/together/ui/screens/HomeScreen.kt` — sticky note + daily question + cards + Guess Me.
+- `app/src/main/java/com/dk/together/ui/screens/ExploreScreen.kt` — searchable activity library.
+- `app/src/main/java/com/dk/together/ui/screens/TogetherScreen.kt` — Discuss/reveal history.
+- `app/src/main/java/com/dk/together/ui/screens/TimelineScreen.kt` — empty-by-default Dates screen.
+- `app/src/main/java/com/dk/together/model/ContentBanks.kt` — original expanded questions/cards/games.
+- `app/src/main/java/com/dk/together/widget/RelationshipWidgetProvider.kt` — sticky-note widget.
+- `app/src/main/java/com/dk/together/widget/DailyQuestionWidgetProvider.kt` — daily-question widget.
 - `.github/workflows/android.yml` — CI APK build.
 
 ## Build
@@ -73,6 +67,6 @@ Use JDK 17, Gradle 9.6.0, Android platform 37.0 and build-tools 37.0.0.
 
 Expected APK: `app/build/outputs/apk/debug/app-debug.apk`
 
-## Recommended next step
+## Recommended next engineering step
 
-The next major engineering step should be real partner sync. Add a `SyncRepository` implementation backed by an authenticated remote relationship space, then make pet state, widget payloads, questions and messages synchronise between two devices. Only after that should the pet system be expanded into multiple species, growth stages, furniture/room decoration and additional multiplayer mini-games.
+Implement authenticated pairing plus a `SyncRepository`/remote relationship space so notes, answer locks/reveals, dates and game picks genuinely synchronise between two phones. Keep the pet/arcade layer deferred until that shared-state foundation is reliable.
