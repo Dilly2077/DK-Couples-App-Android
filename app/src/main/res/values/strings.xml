@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">DK Together</string>
-    <string name="widget_description">A private glance at your relationship.</string>
-    <string name="pet_widget_description">Care for your shared pet from the home screen.</string>
+    <string name="widget_description">A sticky note shared between you and your partner.</string>
+    <string name="daily_widget_description">Today’s private couple question.</string>
+    <string name="pet_widget_description">Shared pet widget reserved for a later build.</string>
 </resources>
