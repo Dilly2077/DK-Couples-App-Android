@@ -28,6 +28,8 @@ data class AppPreferences(
     val hearts: Int = 120,
     val petName: String = "Nova",
     val pet: PetStats = PetStats(),
+    val petRoom: String = "Living room",
+    val petLastUpdatedMs: Long = System.currentTimeMillis(),
     val demoAsPartner: Boolean = false
 )
 
@@ -42,6 +44,31 @@ data class DateIdea(
     val category: String,
     val cost: String
 )
+
+object PetMath {
+    fun decayed(stats: PetStats, lastUpdatedMs: Long, nowMs: Long = System.currentTimeMillis()): PetStats {
+        val elapsedHours = ((nowMs - lastUpdatedMs).coerceAtLeast(0L) / 3_600_000L).toInt()
+        if (elapsedHours == 0) return stats
+        return stats.copy(
+            hunger = (stats.hunger - elapsedHours * 2).coerceIn(0, 100),
+            happiness = (stats.happiness - elapsedHours / 2).coerceIn(0, 100),
+            cleanliness = (stats.cleanliness - elapsedHours).coerceIn(0, 100),
+            energy = (stats.energy - elapsedHours).coerceIn(0, 100),
+            affection = (stats.affection - elapsedHours / 4).coerceIn(0, 100)
+        )
+    }
+
+    fun thought(stats: PetStats): String = when {
+        stats.hunger < 35 -> "Could I have a snack? 🍓"
+        stats.cleanliness < 35 -> "I feel a little grubby… 🫧"
+        stats.energy < 30 -> "Tiny nap, please? 💤"
+        stats.happiness < 40 -> "Will someone play with me? 🧸"
+        stats.affection < 40 -> "Cuddle time? 💜"
+        stats.hunger < 60 -> "The kitchen smells good…"
+        stats.cleanliness < 60 -> "Maybe bath time soon?"
+        else -> "I like it when we're all here together ✨"
+    }
+}
 
 object RelationshipMath {
     fun daysTogether(startEpochDay: Long, nowEpochDay: Long = LocalDate.now().toEpochDay()): Long =
