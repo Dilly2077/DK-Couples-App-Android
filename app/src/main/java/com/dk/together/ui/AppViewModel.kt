@@ -6,10 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.dk.together.data.CoupleRepository
 import com.dk.together.data.InteractionEntity
 import com.dk.together.model.AppPreferences
+import com.dk.together.model.CardContent
 import com.dk.together.model.CoupleProfile
 import com.dk.together.model.DateIdea
-import com.dk.together.model.PetMath
-import com.dk.together.model.PetStats
+import com.dk.together.model.GamePrompt
 import com.dk.together.model.QuestionContent
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -25,65 +25,79 @@ data class AppUiState(
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val repo = CoupleRepository(application)
+
     val state = combine(repo.preferences, repo.interactions) { prefs, interactions ->
-        AppUiState(
-            prefs.copy(pet = PetMath.decayed(prefs.pet, prefs.petLastUpdatedMs)),
-            interactions
-        )
+        AppUiState(prefs, interactions)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppUiState())
 
     val questions: List<QuestionContent> by lazy { loadQuestions() }
+    val cards: List<CardContent> by lazy { loadCards() }
+    val gamePrompts: List<GamePrompt> by lazy { loadGamePrompts() }
     val dateIdeas: List<DateIdea> by lazy { loadDateIdeas() }
-    val dailyQuestion: QuestionContent get() = questions[(LocalDate.now().toEpochDay() % questions.size).toInt()]
+
+    private val todayEpochDay: Long get() = LocalDate.now().toEpochDay()
+    val dailyQuestion: QuestionContent get() = questions[floorIndex(todayEpochDay, questions.size)]
+    val dailyCards: List<CardContent> get() = deterministicSelection(cards, count = 3, salt = 97L)
+    val dailyGame: List<GamePrompt> get() = deterministicSelection(gamePrompts, count = 5, salt = 211L)
+
+    fun dailyQuestionKey(): String = "$todayEpochDay:${dailyQuestion.id}"
+    fun cardKey(card: CardContent): String = "$todayEpochDay:${card.id}"
+    fun gameKey(prompt: GamePrompt): String = "$todayEpochDay:${prompt.id}"
+
+    fun currentActor(prefs: AppPreferences = state.value.prefs): String =
+        if (prefs.demoAsPartner) prefs.profile.partnerName.ifBlank { "Partner" }
+        else prefs.profile.youName.ifBlank { "You" }
+
+    fun otherActor(prefs: AppPreferences = state.value.prefs): String =
+        if (prefs.demoAsPartner) prefs.profile.youName.ifBlank { "You" }
+        else prefs.profile.partnerName.ifBlank { "Partner" }
 
     fun saveProfile(you: String, partner: String, start: LocalDate) {
         viewModelScope.launch {
             repo.saveProfile(CoupleProfile(you.trim(), partner.trim(), start.toEpochDay(), true))
-            repo.record("milestone", you.ifBlank { "You" }, "Our space began", "${you.trim()} + ${partner.trim()}")
         }
     }
 
     fun answerDaily(answer: String) {
         if (answer.isBlank()) return
-        val prefs = state.value.prefs
+        val p = state.value.prefs
+        val actor = currentActor(p)
+        val key = dailyQuestionKey()
+        if (hasResponse("daily_answer", key, actor)) return
+        viewModelScope.launch { repo.record("daily_answer", actor, key, answer.trim()) }
+    }
+
+    fun answerCard(card: CardContent, answer: String) {
+        if (answer.isBlank()) return
+        val p = state.value.prefs
+        val actor = currentActor(p)
+        val key = cardKey(card)
+        if (hasResponse("card_answer", key, actor)) return
+        viewModelScope.launch { repo.record("card_answer", actor, key, answer.trim()) }
+    }
+
+    fun answerGame(prompt: GamePrompt, ownChoice: String, partnerGuess: String) {
+        if (ownChoice !in setOf("A", "B") || partnerGuess !in setOf("A", "B")) return
+        val p = state.value.prefs
+        val actor = currentActor(p)
+        val key = gameKey(prompt)
+        if (hasResponse("game_pick", key, actor)) return
         viewModelScope.launch {
-            repo.record("question", actorName(prefs), dailyQuestion.prompt, answer.trim())
-            repo.rewardHearts(prefs.hearts, 5)
+            repo.record("game_pick", actor, key, "own=$ownChoice;guess=$partnerGuess")
         }
     }
 
     fun sendNote(note: String) {
         if (note.isBlank()) return
-        val prefs = state.value.prefs
-        viewModelScope.launch {
-            repo.sendWidgetNote(note.trim(), prefs, actorName(prefs))
-            repo.rewardHearts(prefs.hearts, 2)
-        }
+        val p = state.value.prefs
+        viewModelScope.launch { repo.sendWidgetNote(note.trim(), p, currentActor(p)) }
     }
 
-    fun addMemory(title: String, body: String) {
+    fun addSpecialDate(title: String, date: LocalDate, detail: String) {
         if (title.isBlank()) return
-        val prefs = state.value.prefs
-        viewModelScope.launch {
-            repo.record("memory", actorName(prefs), title.trim(), body.trim())
-            repo.rewardHearts(prefs.hearts, 3)
-        }
-    }
-
-    fun setMood(mood: String) {
-        val prefs = state.value.prefs
-        viewModelScope.launch {
-            repo.updateMood(mood, prefs.demoAsPartner)
-            repo.record("mood", actorName(prefs), "Mood", mood)
-        }
-    }
-
-    fun setStatus(status: String) {
-        val prefs = state.value.prefs
-        viewModelScope.launch {
-            repo.updateStatus(status, prefs.demoAsPartner)
-            repo.record("status", actorName(prefs), "Status", status)
-        }
+        val actor = currentActor()
+        val body = "${date.toEpochDay()}|${detail.trim()}"
+        viewModelScope.launch { repo.record("special_date", actor, title.trim(), body) }
     }
 
     fun toggleDemoPartner() {
@@ -91,87 +105,80 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { repo.setDemoAsPartner(next) }
     }
 
-    fun setPetRoom(room: String) {
-        val p = state.value.prefs
-        if (room == p.petRoom) return
-        viewModelScope.launch {
-            repo.updatePetRoom(room, p)
-            repo.record("pet", actorName(p), "${p.petName} moved", room)
-        }
+    fun response(type: String, key: String, actor: String): InteractionEntity? =
+        state.value.interactions.firstOrNull { it.type == type && it.title == key && it.actor == actor }
+
+    fun hasResponse(type: String, key: String, actor: String): Boolean = response(type, key, actor) != null
+
+    fun questionByKey(key: String): QuestionContent? {
+        val id = key.substringAfter(':', "")
+        return questions.firstOrNull { it.id == id }
     }
 
-    fun petAction(action: String) {
-        val p = state.value.prefs
-        val s = p.pet
-        val updated = when (action) {
-            "Feed" -> s.copy(hunger = s.hunger + 24, happiness = s.happiness + 3)
-            "Treat" -> s.copy(hunger = s.hunger + 12, happiness = s.happiness + 8)
-            "Play" -> s.copy(happiness = s.happiness + 18, energy = s.energy - 8, affection = s.affection + 5)
-            "Wash", "Bath" -> s.copy(cleanliness = s.cleanliness + 30, happiness = s.happiness - 1)
-            "Splash" -> s.copy(cleanliness = s.cleanliness + 12, happiness = s.happiness + 10)
-            "Nap" -> s.copy(energy = s.energy + 28, hunger = s.hunger - 5)
-            "Cuddle" -> s.copy(affection = s.affection + 20, happiness = s.happiness + 8)
-            "Explore" -> s.copy(happiness = s.happiness + 14, energy = s.energy - 10, affection = s.affection + 3)
-            else -> s
-        }.clamp()
-        viewModelScope.launch {
-            repo.updatePet(updated, p)
-            repo.record("pet", actorName(p), "$action ${p.petName}", petReaction(updated))
-            repo.rewardHearts(p.hearts, 1)
-        }
+    fun cardByKey(key: String): CardContent? {
+        val id = key.substringAfter(':', "")
+        return cards.firstOrNull { it.id == id }
     }
 
-    fun completeChallenge(title: String) {
-        val p = state.value.prefs
-        viewModelScope.launch {
-            repo.record("challenge", actorName(p), "Challenge complete", title)
-            repo.rewardHearts(p.hearts, 8)
-        }
+    fun gameByKey(key: String): GamePrompt? {
+        val id = key.substringAfter(':', "")
+        return gamePrompts.firstOrNull { it.id == id }
     }
 
-    fun recordGameScore(game: String, score: Int) {
-        val p = state.value.prefs
-        viewModelScope.launch {
-            repo.record("game", actorName(p), game, "Score: $score")
-            repo.rewardHearts(p.hearts, (score / 50).coerceIn(1, 12))
-        }
+    private fun floorIndex(value: Long, size: Int): Int {
+        if (size <= 0) return 0
+        val mod = value % size
+        return (if (mod < 0) mod + size else mod).toInt()
     }
 
-    private fun actorName(prefs: AppPreferences): String =
-        if (prefs.demoAsPartner) prefs.profile.partnerName.ifBlank { "Partner" }
-        else prefs.profile.youName.ifBlank { "You" }
-
-    private fun PetStats.clamp() = copy(
-        hunger = hunger.coerceIn(0, 100),
-        happiness = happiness.coerceIn(0, 100),
-        cleanliness = cleanliness.coerceIn(0, 100),
-        energy = energy.coerceIn(0, 100),
-        affection = affection.coerceIn(0, 100)
-    )
-
-    private fun petReaction(stats: PetStats): String = when {
-        stats.happiness > 90 -> "is bouncing around happily ✨"
-        stats.energy < 30 -> "looks ready for a nap 💤"
-        stats.hunger < 30 -> "is thinking very seriously about snacks"
-        stats.cleanliness < 30 -> "would really like a wash"
-        else -> "seems content in your shared little world"
+    private fun <T> deterministicSelection(source: List<T>, count: Int, salt: Long): List<T> {
+        if (source.isEmpty()) return emptyList()
+        val start = floorIndex(todayEpochDay * salt + 17L, source.size)
+        val stride = ((salt.toInt() % (source.size - 1).coerceAtLeast(1)) + 1).coerceAtLeast(1)
+        val out = ArrayList<T>(count)
+        var index = start
+        repeat(count.coerceAtMost(source.size)) {
+            while (out.contains(source[index])) index = (index + 1) % source.size
+            out += source[index]
+            index = (index + stride) % source.size
+        }
+        return out
     }
 
     private fun loadQuestions(): List<QuestionContent> {
-        val raw = getApplication<Application>().assets.open("questions.json").bufferedReader().use { it.readText() }
-        val array = JSONArray(raw)
+        val array = loadArray("questions.json")
         return List(array.length()) { i ->
             val o = array.getJSONObject(i)
             QuestionContent(o.getString("id"), o.getString("category"), o.getString("prompt"))
         }
     }
 
+    private fun loadCards(): List<CardContent> {
+        val array = loadArray("cards.json")
+        return List(array.length()) { i ->
+            val o = array.getJSONObject(i)
+            CardContent(o.getString("id"), o.getString("deck"), o.getString("prompt"))
+        }
+    }
+
+    private fun loadGamePrompts(): List<GamePrompt> {
+        val array = loadArray("game_prompts.json")
+        return List(array.length()) { i ->
+            val o = array.getJSONObject(i)
+            GamePrompt(o.getString("id"), o.getString("category"), o.getString("optionA"), o.getString("optionB"))
+        }
+    }
+
     private fun loadDateIdeas(): List<DateIdea> {
-        val raw = getApplication<Application>().assets.open("date_ideas.json").bufferedReader().use { it.readText() }
-        val array = JSONArray(raw)
+        val array = loadArray("date_ideas.json")
         return List(array.length()) { i ->
             val o = array.getJSONObject(i)
             DateIdea(o.getString("title"), o.getString("category"), o.getString("cost"))
         }
+    }
+
+    private fun loadArray(file: String): JSONArray {
+        val raw = getApplication<Application>().assets.open(file).bufferedReader().use { it.readText() }
+        return JSONArray(raw)
     }
 }
