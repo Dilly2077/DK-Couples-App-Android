@@ -1,34 +1,39 @@
 # DK Together
 
-An Android-first private couples app combining relationship activities, home-screen connection and a shared virtual-pet loop in one dark, playful interface.
+An Android-first private couples app focused on a simple daily relationship loop: leave each other home-screen notes, answer a question, play conversation cards and complete a short partner game.
 
-This repository is an original implementation. It does not contain Paired or Widgetable source code, branding, artwork, or proprietary content.
+This repository is an original implementation. It does not contain Paired or Widgetable source code, branding, artwork or proprietary question/game content.
 
-## V0.1 features
+## V0.3 core
 
-- Five-section UI: Home, Explore, Together, Timeline and Us.
-- Local onboarding with relationship start date.
-- 100 original daily relationship questions.
-- 50 original date ideas and a date roulette.
-- Quick This-or-That game and repeatable challenges.
-- Mood and status sharing with local Partner A / Partner B demo mode.
-- Shared virtual pet with hunger, happiness, cleanliness, energy and affection.
-- Hearts reward currency.
-- Widget-note history and a real Android home-screen relationship widget.
-- Persistent interaction history using Room.
-- Persistent preferences using DataStore.
-- Memories and relationship timeline.
-- Relationship duration and clearly-labelled heartbeat estimate.
-- Descriptive local relationship insights.
-- GitHub Actions APK build.
+- High-contrast cream/lilac Material 3 interface.
+- Home screen centred on the latest sticky note and today's activities.
+- Sticky-note Android home-screen widget.
+- Daily-question Android home-screen widget.
+- One daily private couple question. Each answer stays hidden until both sides respond.
+- Three daily conversation cards with the same two-sided reveal flow.
+- Five-round `Guess Me` game: choose your own A/B answer and predict your partner's; results unlock after both finish.
+- Large original content library generated from curated relationship topics, including communication, memories, values, money, conflict, affection, intimacy and consensual adult sexual topics.
+- Searchable Explore library for questions, cards and game dilemmas.
+- Discuss screen containing only mutually unlocked answers, sticky-note history and completed game results.
+- Dates screen starts genuinely empty and contains only special dates entered by the couple.
+- Local two-side testing mode so the answer-lock/reveal protocol can be exercised before remote partner sync is added.
+- Room persistence, DataStore preferences and GitHub Actions APK builds.
+- Existing launcher icon and branded splash screen retained.
+
+## Deliberately deferred
+
+The earlier pet room, need bars, pet widget and prototype Fruit Merge game have been removed from the active product flow. They were not polished enough. The shared-pet/Widgetable-style layer will be rebuilt later with proper art, animation, interactions and game physics instead of shipping placeholder mechanics.
+
+Real two-device pairing/sync is also not implemented yet. V0.3 simulates the two partners locally; it does not claim to synchronise two phones.
 
 ## Build
 
 Requirements:
 
 - JDK 17
-- Android SDK platform 37
-- Android build tools 36.0.0
+- Android SDK platform 37.0
+- Android build tools 37.0.0
 - Gradle 9.6.0
 
 From the repository root:
@@ -42,23 +47,21 @@ The debug APK is generated at:
 
 `app/build/outputs/apk/debug/app-debug.apk`
 
-A GitHub Actions run also uploads `DKTogether-debug-apk` as a downloadable build artifact.
+GitHub Actions uploads `DKTogether-v0.3-debug-apk` as a build artifact.
 
 ## Architecture
 
 - Kotlin + Jetpack Compose + Material 3
-- Room for interaction history
-- Preferences DataStore for profile, pet and lightweight state
+- Room for activity/date/note response persistence
+- Preferences DataStore for lightweight profile state
 - MVVM-style `AppViewModel`
-- Repository boundary around persistence
-- Classic Android `RemoteViews` widget for broad launcher compatibility
+- Repository boundary around persistence and widget snapshots
+- Android `RemoteViews` widgets for sticky notes and the daily question
 
 See `ARCHITECTURE.md` and `CHECKPOINT.md`.
 
 ## Privacy
 
-V0.1 is local-first and does not include analytics, ad SDKs, telemetry, contact scraping or location collection. Real partner-to-partner sync is not enabled yet. See `PRIVACY.md`.
+This build is local-first and contains no analytics, ad SDKs, telemetry, contact scraping or location collection. See `PRIVACY.md`.
 
-## Notes
-
-The current package name is `com.dk.together` and the temporary product name is **DK Together**. Both can be changed before Play Store publication.
+The package name is `com.dk.together` and the working product name is **DK Together**.
