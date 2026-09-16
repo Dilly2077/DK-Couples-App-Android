@@ -9,7 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.dk.together.ui.EveluneAppV2
+import com.dk.together.ui.EveluneNextApp
 import com.dk.together.ui.theme.DKTogetherTheme
 
 class MainActivity : ComponentActivity() {
@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             DKTogetherTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    EveluneAppV2()
+                    EveluneNextApp()
                 }
             }
         }
