@@ -7,6 +7,7 @@ import com.dk.together.data.CoupleRepository
 import com.dk.together.data.InteractionEntity
 import com.dk.together.model.AppPreferences
 import com.dk.together.model.CardContent
+import com.dk.together.model.ContentBanks
 import com.dk.together.model.CoupleProfile
 import com.dk.together.model.DateIdea
 import com.dk.together.model.GamePrompt
@@ -31,8 +32,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppUiState())
 
     val questions: List<QuestionContent> by lazy { loadQuestions() }
-    val cards: List<CardContent> by lazy { loadCards() }
-    val gamePrompts: List<GamePrompt> by lazy { loadGamePrompts() }
+    val cards: List<CardContent> by lazy { ContentBanks.cards(questions) }
+    val gamePrompts: List<GamePrompt> by lazy { ContentBanks.games() }
     val dateIdeas: List<DateIdea> by lazy { loadDateIdeas() }
 
     private val todayEpochDay: Long get() = LocalDate.now().toEpochDay()
@@ -147,26 +148,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun loadQuestions(): List<QuestionContent> {
         val array = loadArray("questions.json")
-        return List(array.length()) { i ->
+        val base = List(array.length()) { i ->
             val o = array.getJSONObject(i)
             QuestionContent(o.getString("id"), o.getString("category"), o.getString("prompt"))
         }
-    }
-
-    private fun loadCards(): List<CardContent> {
-        val array = loadArray("cards.json")
-        return List(array.length()) { i ->
-            val o = array.getJSONObject(i)
-            CardContent(o.getString("id"), o.getString("deck"), o.getString("prompt"))
-        }
-    }
-
-    private fun loadGamePrompts(): List<GamePrompt> {
-        val array = loadArray("game_prompts.json")
-        return List(array.length()) { i ->
-            val o = array.getJSONObject(i)
-            GamePrompt(o.getString("id"), o.getString("category"), o.getString("optionA"), o.getString("optionB"))
-        }
+        return ContentBanks.expandedQuestions(base)
     }
 
     private fun loadDateIdeas(): List<DateIdea> {
