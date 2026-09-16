@@ -1,5 +1,6 @@
 package com.dk.together.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,12 +19,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dk.together.ui.theme.SurfacePurple
+import com.dk.together.ui.theme.SurfacePurple2
 
 @Composable
 fun SectionTitle(title: String, subtitle: String? = null) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        if (subtitle != null) Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(title, style = MaterialTheme.typography.headlineSmall)
+        if (subtitle != null) {
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -31,8 +39,9 @@ fun SectionTitle(title: String, subtitle: String? = null) {
 fun SoftCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = SurfacePurple),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .72f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { content() }
@@ -40,10 +49,25 @@ fun SoftCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
 }
 
 @Composable
+fun AccentCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(26.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfacePurple2),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .28f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { content() }
+    }
+}
+
+@Composable
 fun LabelPill(text: String, color: Color = MaterialTheme.colorScheme.primary.copy(alpha = .18f)) {
     Text(
         text = text,
-        modifier = Modifier.background(color, RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 5.dp),
+        modifier = Modifier
+            .background(color, RoundedCornerShape(50))
+            .padding(horizontal = 11.dp, vertical = 6.dp),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurface
     )
@@ -54,7 +78,7 @@ fun StatRow(label: String, value: String, emoji: String) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(emoji, style = MaterialTheme.typography.titleLarge)
         Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
-            Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, fontWeight = FontWeight.SemiBold)
         }
     }
