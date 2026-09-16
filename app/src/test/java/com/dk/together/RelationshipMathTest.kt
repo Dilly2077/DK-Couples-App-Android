@@ -1,7 +1,7 @@
 package com.dk.together
 
-import com.dk.together.model.PetMath
-import com.dk.together.model.PetStats
+import com.dk.together.model.ContentBanks
+import com.dk.together.model.QuestionContent
 import com.dk.together.model.RelationshipMath
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -27,17 +27,19 @@ class RelationshipMathTest {
     }
 
     @Test
-    fun petNeedsDecayOverElapsedHours() {
-        val start = 1_000_000L
-        val now = start + 5L * 3_600_000L
-        val result = PetMath.decayed(PetStats(hunger = 80, cleanliness = 80), start, now)
-        assertEquals(70, result.hunger)
-        assertEquals(75, result.cleanliness)
+    fun expandedQuestionBankIsLargeAndVaried() {
+        val base = listOf(QuestionContent("q1", "Communication", "How are we doing?"))
+        val expanded = ContentBanks.expandedQuestions(base)
+        assertTrue(expanded.size > 700)
+        assertTrue(expanded.any { it.category == "Sex & Pleasure" && it.prompt.contains("orgasm", ignoreCase = true) })
+        assertTrue(expanded.any { it.category == "Conflict" })
+        assertTrue(expanded.any { it.category == "Future" })
     }
 
     @Test
-    fun hungryPetAsksForFood() {
-        val thought = PetMath.thought(PetStats(hunger = 20))
-        assertTrue(thought.contains("snack", ignoreCase = true))
+    fun gameBankHasEnoughFiveRoundVariety() {
+        val games = ContentBanks.games()
+        assertTrue(games.size >= 100)
+        assertTrue(games.map { it.category }.distinct().size >= 8)
     }
 }
