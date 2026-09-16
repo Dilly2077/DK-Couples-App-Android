@@ -22,9 +22,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -65,6 +65,7 @@ import com.dk.together.ui.theme.EveluneRoseDeep
 import com.dk.together.ui.theme.EveluneRosePale
 
 private enum class HomeArtwork { QUESTION, GAME, CARD, CHALLENGE }
+private enum class MorePage { EXPLORE, US }
 
 @Composable
 fun EveluneNextApp() {
@@ -75,14 +76,22 @@ fun EveluneNextApp() {
     var refreshKey by remember { mutableIntStateOf(0) }
     var actor by remember { mutableStateOf(store.currentActor) }
     var destination by remember { mutableStateOf<ContentDestination?>(null) }
-    val labels = listOf("Home", "Explore", "Discuss", "Timeline", "Us")
+    var morePage by remember { mutableStateOf<MorePage?>(null) }
+    val labels = listOf("Home", "Discuss", "Timeline", "Pets", "More")
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = EveluneBackground,
         bottomBar = {
             if (destination == null) {
-                EveluneNavBar(selected = selected, labels = labels, onSelect = { selected = it })
+                EveluneNavBar(
+                    selected = selected,
+                    labels = labels,
+                    onSelect = { index ->
+                        selected = index
+                        if (index == 4) morePage = null
+                    },
+                )
             }
         },
     ) { innerPadding ->
@@ -120,34 +129,44 @@ fun EveluneNextApp() {
                     onOpen = { destination = it },
                     modifier = Modifier.padding(innerPadding),
                 )
-                1 -> ExploreUi(
-                    store,
-                    actor,
-                    refreshKey,
-                    { destination = it },
-                    Modifier.padding(innerPadding).statusBarsPadding(),
-                )
-                2 -> DiscussChatList(
+                1 -> DiscussChatList(
                     store = store,
                     social = social,
                     refreshKey = refreshKey,
                     onOpen = { destination = it },
                     modifier = Modifier.padding(innerPadding).statusBarsPadding(),
                 )
-                3 -> MemoryTimelineScreen(
+                2 -> MemoryTimelineScreen(
                     social = social,
                     modifier = Modifier.padding(innerPadding).statusBarsPadding(),
                 )
-                else -> UsUi(
-                    store = store,
-                    actor = actor,
-                    onActorChanged = {
-                        actor = it
-                        store.currentActor = it
-                        refreshKey++
-                    },
+                3 -> PetSectionScreen(
                     modifier = Modifier.padding(innerPadding).statusBarsPadding(),
                 )
+                else -> when (morePage) {
+                    MorePage.EXPLORE -> ExploreUi(
+                        store,
+                        actor,
+                        refreshKey,
+                        { destination = it },
+                        Modifier.padding(innerPadding).statusBarsPadding(),
+                    )
+                    MorePage.US -> UsUi(
+                        store = store,
+                        actor = actor,
+                        onActorChanged = {
+                            actor = it
+                            store.currentActor = it
+                            refreshKey++
+                        },
+                        modifier = Modifier.padding(innerPadding).statusBarsPadding(),
+                    )
+                    null -> EveluneMoreHub(
+                        onExplore = { morePage = MorePage.EXPLORE },
+                        onUs = { morePage = MorePage.US },
+                        modifier = Modifier.padding(innerPadding).statusBarsPadding(),
+                    )
+                }
             }
         }
     }
@@ -407,10 +426,10 @@ private fun EveluneNavBar(selected: Int, labels: List<String>, onSelect: (Int) -
                 val tint = if (selected == index) EveluneRoseDeep else EveluneMuted
                 val icon = when (index) {
                     0 -> Icons.Filled.Home
-                    1 -> Icons.Filled.Search
-                    2 -> Icons.Filled.Chat
-                    3 -> Icons.Filled.DateRange
-                    else -> Icons.Filled.Favorite
+                    1 -> Icons.Filled.Chat
+                    2 -> Icons.Filled.DateRange
+                    3 -> Icons.Filled.Pets
+                    else -> Icons.Filled.MoreHoriz
                 }
                 Surface(onClick = { onSelect(index) }, color = Color.Transparent, shape = RoundedCornerShape(18.dp)) {
                     Column(
