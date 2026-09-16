@@ -28,6 +28,31 @@ data class PairSubmission(
     val latestAt: Long? get() = listOfNotNull(you?.submittedAt, partner?.submittedAt).maxOrNull()
 }
 
+data class ChatMessage(
+    val id: Long,
+    val threadId: String,
+    val actor: LocalActor,
+    val body: String,
+    val sentAt: Long,
+)
+
+data class MemoryEntry(
+    val id: Long,
+    val title: String,
+    val eventDate: Long,
+    val description: String,
+    val favoritePart: String,
+    val createdAt: Long,
+)
+
+data class MemoryMedia(
+    val id: Long,
+    val memoryId: Long,
+    val uri: String,
+    val mimeType: String,
+    val position: Int,
+)
+
 class EveluneStore(context: Context) {
     companion object {
         const val TYPE_QUESTION = "question"
@@ -100,6 +125,130 @@ class EveluneStore(context: Context) {
         ).use { cursor -> return if (cursor.moveToFirst()) cursor.toSubmission() else null }
     }
 
+    fun sendMessage(threadId: String, actor: LocalActor, body: String, at: Long = System.currentTimeMillis()): Long {
+        val clean = body.trim()
+        require(clean.isNotBlank())
+        return helper.writableDatabase.insertOrThrow(
+            "chat_messages",
+            null,
+            ContentValues().apply {
+                put("thread_id", threadId)
+                put("actor", actor.key)
+                put("body", clean)
+                put("sent_at", at)
+            }
+        )
+    }
+
+    fun messages(threadId: String): List<ChatMessage> {
+        val out = mutableListOf<ChatMessage>()
+        helper.readableDatabase.query(
+            "chat_messages",
+            arrayOf("id", "thread_id", "actor", "body", "sent_at"),
+            "thread_id = ?",
+            arrayOf(threadId),
+            null, null,
+            "sent_at ASC, id ASC"
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                out += ChatMessage(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    threadId = cursor.getString(cursor.getColumnIndexOrThrow("thread_id")),
+                    actor = if (cursor.getString(cursor.getColumnIndexOrThrow("actor")) == LocalActor.PARTNER.key) LocalActor.PARTNER else LocalActor.YOU,
+                    body = cursor.getString(cursor.getColumnIndexOrThrow("body")),
+                    sentAt = cursor.getLong(cursor.getColumnIndexOrThrow("sent_at")),
+                )
+            }
+        }
+        return out
+    }
+
+    fun saveMemory(
+        title: String,
+        eventDate: Long,
+        description: String,
+        favoritePart: String,
+        media: List<Pair<String, String>>,
+        createdAt: Long = System.currentTimeMillis(),
+    ): Long {
+        val db = helper.writableDatabase
+        db.beginTransaction()
+        return try {
+            val memoryId = db.insertOrThrow(
+                "memories",
+                null,
+                ContentValues().apply {
+                    put("title", title.trim())
+                    put("event_date", eventDate)
+                    put("description", description.trim())
+                    put("favorite_part", favoritePart.trim())
+                    put("created_at", createdAt)
+                }
+            )
+            media.forEachIndexed { index, item ->
+                db.insertOrThrow(
+                    "memory_media",
+                    null,
+                    ContentValues().apply {
+                        put("memory_id", memoryId)
+                        put("uri", item.first)
+                        put("mime_type", item.second)
+                        put("position", index)
+                    }
+                )
+            }
+            db.setTransactionSuccessful()
+            memoryId
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    fun allMemories(): List<MemoryEntry> {
+        val out = mutableListOf<MemoryEntry>()
+        helper.readableDatabase.query(
+            "memories",
+            arrayOf("id", "title", "event_date", "description", "favorite_part", "created_at"),
+            null, null, null, null,
+            "event_date DESC, created_at DESC"
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                out += MemoryEntry(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    title = cursor.getString(cursor.getColumnIndexOrThrow("title")),
+                    eventDate = cursor.getLong(cursor.getColumnIndexOrThrow("event_date")),
+                    description = cursor.getString(cursor.getColumnIndexOrThrow("description")),
+                    favoritePart = cursor.getString(cursor.getColumnIndexOrThrow("favorite_part")),
+                    createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at")),
+                )
+            }
+        }
+        return out
+    }
+
+    fun mediaForMemory(memoryId: Long): List<MemoryMedia> {
+        val out = mutableListOf<MemoryMedia>()
+        helper.readableDatabase.query(
+            "memory_media",
+            arrayOf("id", "memory_id", "uri", "mime_type", "position"),
+            "memory_id = ?",
+            arrayOf(memoryId.toString()),
+            null, null,
+            "position ASC, id ASC"
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                out += MemoryMedia(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    memoryId = cursor.getLong(cursor.getColumnIndexOrThrow("memory_id")),
+                    uri = cursor.getString(cursor.getColumnIndexOrThrow("uri")),
+                    mimeType = cursor.getString(cursor.getColumnIndexOrThrow("mime_type")),
+                    position = cursor.getInt(cursor.getColumnIndexOrThrow("position")),
+                )
+            }
+        }
+        return out
+    }
+
     private fun android.database.Cursor.toSubmission(): Submission {
         val actor = if (getString(getColumnIndexOrThrow("actor")) == LocalActor.PARTNER.key) LocalActor.PARTNER else LocalActor.YOU
         return Submission(
@@ -111,11 +260,25 @@ class EveluneStore(context: Context) {
         )
     }
 
-    private class Db(context: Context) : SQLiteOpenHelper(context, "evelune.db", null, 1) {
+    private class Db(context: Context) : SQLiteOpenHelper(context, "evelune.db", null, 2) {
+        override fun onConfigure(db: SQLiteDatabase) {
+            super.onConfigure(db)
+            db.setForeignKeyConstraintsEnabled(true)
+        }
+
         override fun onCreate(db: SQLiteDatabase) {
+            createSubmissions(db)
+            createConversationAndTimelineTables(db)
+        }
+
+        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+            if (oldVersion < 2) createConversationAndTimelineTables(db)
+        }
+
+        private fun createSubmissions(db: SQLiteDatabase) {
             db.execSQL(
                 """
-                CREATE TABLE submissions (
+                CREATE TABLE IF NOT EXISTS submissions (
                     content_id TEXT NOT NULL,
                     content_type TEXT NOT NULL,
                     actor TEXT NOT NULL,
@@ -125,9 +288,48 @@ class EveluneStore(context: Context) {
                 )
                 """.trimIndent()
             )
-            db.execSQL("CREATE INDEX idx_submissions_time ON submissions(submitted_at DESC)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_submissions_time ON submissions(submitted_at DESC)")
         }
 
-        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+        private fun createConversationAndTimelineTables(db: SQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    thread_id TEXT NOT NULL,
+                    actor TEXT NOT NULL,
+                    body TEXT NOT NULL,
+                    sent_at INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_chat_thread_time ON chat_messages(thread_id, sent_at ASC)")
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS memories (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    event_date INTEGER NOT NULL,
+                    description TEXT NOT NULL,
+                    favorite_part TEXT NOT NULL,
+                    created_at INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_memories_event_date ON memories(event_date DESC)")
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS memory_media (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    memory_id INTEGER NOT NULL,
+                    uri TEXT NOT NULL,
+                    mime_type TEXT NOT NULL,
+                    position INTEGER NOT NULL,
+                    FOREIGN KEY(memory_id) REFERENCES memories(id) ON DELETE CASCADE
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_memory_media ON memory_media(memory_id, position ASC)")
+        }
     }
 }
