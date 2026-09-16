@@ -46,12 +46,12 @@ class AppStore(private val context: Context) {
                 startEpochDay = p[Keys.startEpochDay] ?: java.time.LocalDate.now().toEpochDay(),
                 onboarded = p[Keys.onboarded] ?: false
             ),
-            mood = p[Keys.mood] ?: "Calm",
-            status = p[Keys.status] ?: "Free",
-            partnerMood = p[Keys.partnerMood] ?: "Loved",
-            partnerStatus = p[Keys.partnerStatus] ?: "Thinking of you",
-            widgetNote = p[Keys.note] ?: "Thinking of you 💜",
-            hearts = p[Keys.hearts] ?: 120,
+            mood = p[Keys.mood].orEmpty(),
+            status = p[Keys.status].orEmpty(),
+            partnerMood = p[Keys.partnerMood].orEmpty(),
+            partnerStatus = p[Keys.partnerStatus].orEmpty(),
+            widgetNote = p[Keys.note].orEmpty(),
+            hearts = p[Keys.hearts] ?: 0,
             petName = p[Keys.petName] ?: "Nova",
             pet = PetStats(
                 hunger = p[Keys.hunger] ?: 72,
