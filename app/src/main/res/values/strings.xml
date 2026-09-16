@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">DK Together</string>
     <string name="widget_description">A private glance at your relationship.</string>
+    <string name="pet_widget_description">Care for your shared pet from the home screen.</string>
 </resources>
