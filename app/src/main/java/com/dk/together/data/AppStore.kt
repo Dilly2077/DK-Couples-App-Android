@@ -33,6 +33,8 @@ class AppStore(private val context: Context) {
         val cleanliness = intPreferencesKey("pet_cleanliness")
         val energy = intPreferencesKey("pet_energy")
         val affection = intPreferencesKey("pet_affection")
+        val petRoom = stringPreferencesKey("pet_room")
+        val petLastUpdatedMs = longPreferencesKey("pet_last_updated_ms")
         val demoAsPartner = booleanPreferencesKey("demo_as_partner")
     }
 
@@ -58,6 +60,8 @@ class AppStore(private val context: Context) {
                 energy = p[Keys.energy] ?: 70,
                 affection = p[Keys.affection] ?: 86
             ),
+            petRoom = p[Keys.petRoom] ?: "Living room",
+            petLastUpdatedMs = p[Keys.petLastUpdatedMs] ?: System.currentTimeMillis(),
             demoAsPartner = p[Keys.demoAsPartner] ?: false
         )
     }
@@ -82,6 +86,7 @@ class AppStore(private val context: Context) {
     suspend fun setNote(note: String) = context.dataStore.edit { it[Keys.note] = note }
     suspend fun setHearts(value: Int) = context.dataStore.edit { it[Keys.hearts] = value.coerceAtLeast(0) }
     suspend fun setDemoAsPartner(value: Boolean) = context.dataStore.edit { it[Keys.demoAsPartner] = value }
+    suspend fun setPetRoom(room: String) = context.dataStore.edit { it[Keys.petRoom] = room }
 
     suspend fun setPet(stats: PetStats) = context.dataStore.edit { p ->
         p[Keys.hunger] = stats.hunger.coerceIn(0, 100)
@@ -89,5 +94,6 @@ class AppStore(private val context: Context) {
         p[Keys.cleanliness] = stats.cleanliness.coerceIn(0, 100)
         p[Keys.energy] = stats.energy.coerceIn(0, 100)
         p[Keys.affection] = stats.affection.coerceIn(0, 100)
+        p[Keys.petLastUpdatedMs] = System.currentTimeMillis()
     }
 }
