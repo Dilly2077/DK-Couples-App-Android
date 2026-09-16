@@ -4,6 +4,7 @@ import android.content.Context
 import com.dk.together.model.AppPreferences
 import com.dk.together.model.CoupleProfile
 import com.dk.together.model.PetStats
+import com.dk.together.widget.PetWidgetProvider
 import com.dk.together.widget.RelationshipWidgetProvider
 import kotlinx.coroutines.flow.Flow
 
@@ -16,7 +17,7 @@ class CoupleRepository(private val context: Context) {
 
     suspend fun saveProfile(profile: CoupleProfile) {
         store.saveProfile(profile)
-        persistWidget(profile.youName, profile.partnerName, profile.startEpochDay, null)
+        persistRelationshipWidget(profile.youName, profile.partnerName, profile.startEpochDay, null)
     }
 
     suspend fun record(type: String, actor: String, title: String, body: String) {
@@ -30,15 +31,25 @@ class CoupleRepository(private val context: Context) {
     suspend fun sendWidgetNote(note: String, prefs: AppPreferences, actor: String) {
         store.setNote(note)
         record("note", actor, "Widget note", note)
-        persistWidget(prefs.profile.youName, prefs.profile.partnerName, prefs.profile.startEpochDay, note)
+        persistRelationshipWidget(prefs.profile.youName, prefs.profile.partnerName, prefs.profile.startEpochDay, note)
         RelationshipWidgetProvider.updateAll(context)
     }
 
     suspend fun rewardHearts(current: Int, delta: Int) = store.setHearts(current + delta)
 
-    suspend fun updatePet(stats: PetStats) = store.setPet(stats)
+    suspend fun updatePet(stats: PetStats, prefs: AppPreferences) {
+        store.setPet(stats)
+        persistPetWidget(prefs.petName, prefs.petRoom, stats)
+        PetWidgetProvider.updateAll(context)
+    }
 
-    private fun persistWidget(you: String, partner: String, startEpochDay: Long, note: String?) {
+    suspend fun updatePetRoom(room: String, prefs: AppPreferences) {
+        store.setPetRoom(room)
+        persistPetWidget(prefs.petName, room, prefs.pet)
+        PetWidgetProvider.updateAll(context)
+    }
+
+    private fun persistRelationshipWidget(you: String, partner: String, startEpochDay: Long, note: String?) {
         context.getSharedPreferences("widget_snapshot", Context.MODE_PRIVATE).edit()
             .putString("you", you)
             .putString("partner", partner)
@@ -46,6 +57,18 @@ class CoupleRepository(private val context: Context) {
             .apply {
                 if (note != null) putString("note", note)
             }
+            .apply()
+    }
+
+    private fun persistPetWidget(name: String, room: String, stats: PetStats) {
+        context.getSharedPreferences("widget_snapshot", Context.MODE_PRIVATE).edit()
+            .putString("pet_name", name)
+            .putString("pet_room", room)
+            .putInt("pet_hunger", stats.hunger)
+            .putInt("pet_happiness", stats.happiness)
+            .putInt("pet_cleanliness", stats.cleanliness)
+            .putInt("pet_energy", stats.energy)
+            .putInt("pet_affection", stats.affection)
             .apply()
     }
 }
