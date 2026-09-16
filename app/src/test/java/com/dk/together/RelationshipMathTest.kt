@@ -9,12 +9,12 @@ class RelationshipMathTest {
     @Test
     fun daysTogetherNeverNegative() {
         val today = LocalDate.of(2026, 9, 16).toEpochDay()
-        assertEquals(0, RelationshipMath.daysTogether(today + 10, today))
+        assertEquals(0L, RelationshipMath.daysTogether(today + 10, today))
     }
 
     @Test
     fun heartbeatEstimateUsesConfiguredBpm() {
-        assertEquals(100_800, RelationshipMath.estimatedHeartbeats(1, 70))
+        assertEquals(100_800L, RelationshipMath.estimatedHeartbeats(1, 70))
     }
 
     @Test
