@@ -37,9 +37,9 @@ fun CouplesApp(viewModel: AppViewModel = viewModel()) {
         listOf(
             NavItem("Home", "⌂"),
             NavItem("Explore", "✦"),
-            NavItem("Together", "♡"),
-            NavItem("Timeline", "◷"),
-            NavItem("Us", "♥")
+            NavItem("Discuss", "◌"),
+            NavItem("Dates", "◷"),
+            NavItem("Us", "♡")
         )
     }
     var selected by remember { mutableIntStateOf(0) }
@@ -61,7 +61,7 @@ fun CouplesApp(viewModel: AppViewModel = viewModel()) {
                         },
                         label = { Text(item.label) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
                             selectedTextColor = MaterialTheme.colorScheme.primary,
                             indicatorColor = MaterialTheme.colorScheme.primaryContainer,
                             unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
