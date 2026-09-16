@@ -2,8 +2,11 @@
     <style name="Theme.DKTogether" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:statusBarColor">#17132B</item>
-        <item name="android:navigationBarColor">#17132B</item>
-        <item name="android:windowBackground">#17132B</item>
+        <item name="android:statusBarColor">#211A39</item>
+        <item name="android:navigationBarColor">#211A39</item>
+        <item name="android:windowBackground">#211A39</item>
+        <item name="android:windowSplashScreenBackground">#2A2148</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#2A2148</item>
     </style>
 </resources>
