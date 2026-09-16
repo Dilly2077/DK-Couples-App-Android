@@ -27,25 +27,23 @@ class RelationshipWidgetProvider : AppWidgetProvider() {
             val prefs = context.getSharedPreferences("widget_snapshot", Context.MODE_PRIVATE)
             val you = prefs.getString("you", "You") ?: "You"
             val partner = prefs.getString("partner", "Partner") ?: "Partner"
+            val sender = prefs.getString("note_sender", "") ?: ""
+            val note = prefs.getString("note", "") ?: ""
             val startEpochDay = prefs.getLong("start_epoch_day", java.time.LocalDate.now().toEpochDay())
-            val note = prefs.getString("note", "Thinking of you 💜") ?: "Thinking of you 💜"
             val days = RelationshipMath.daysTogether(startEpochDay)
 
-            val launchIntent = Intent(context, MainActivity::class.java)
             val pendingIntent = PendingIntent.getActivity(
                 context,
                 0,
-                launchIntent,
+                Intent(context, MainActivity::class.java),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
             val views = RemoteViews(context.packageName, R.layout.relationship_widget).apply {
-                setTextViewText(R.id.widget_title, "$you + $partner")
+                setTextViewText(R.id.widget_title, if (sender.isBlank()) "$you + $partner" else "from $sender")
                 setTextViewText(R.id.widget_counter, "$days days together")
-                setTextViewText(R.id.widget_note, note)
-                setOnClickPendingIntent(R.id.widget_title, pendingIntent)
-                setOnClickPendingIntent(R.id.widget_counter, pendingIntent)
-                setOnClickPendingIntent(R.id.widget_note, pendingIntent)
+                setTextViewText(R.id.widget_note, if (note.isBlank()) "No sticky note yet ♡" else note)
+                setOnClickPendingIntent(R.id.widget_root, pendingIntent)
             }
             manager.updateAppWidget(appWidgetId, views)
         }
