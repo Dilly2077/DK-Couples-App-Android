@@ -6,7 +6,8 @@ plugins {
 
 android {
     namespace = "com.dk.together"
-    compileSdk = 36
+    compileSdk = 37
+    compileSdkMinor = 0
 
     defaultConfig {
         applicationId = "com.dk.together"
