@@ -18,6 +18,7 @@ class CleaningEngineTest {
 
     private data class Fixture(
         val pets: InMemoryPetEngineRepository,
+        val petEngine: PetEngine,
         val rewards: InMemoryRewardRepository,
         val engine: CleaningEngine,
     )
@@ -38,12 +39,14 @@ class CleaningEngineTest {
                 dirtiness = dirtiness,
             )
         )
+        val petEngine = PetEngine(pets)
         val rewards = InMemoryRewardRepository()
         return Fixture(
             pets = pets,
+            petEngine = petEngine,
             rewards = rewards,
             engine = CleaningEngine(
-                petEngine = PetEngine(pets),
+                petEngine = petEngine,
                 rewardHooks = RewardHooks(RewardEngine(rewards)),
             ),
         )
@@ -97,8 +100,31 @@ class CleaningEngineTest {
         val second = f.engine.clean("pet-1", "clean-retry", 0.90, nowEpochMs = 1_000L)
 
         assertEquals(CleanDecision.Completed, first.decision)
-        assertEquals(CleanDecision.PetNotDirtyEnough, second.decision)
+        assertEquals(CleanDecision.AlreadyCompleted, second.decision)
         assertEquals(5.0, f.pets.findPet("pet-1")?.dirtiness ?: -1.0, 0.001)
+        assertEquals(10, f.rewards.loadBalance().eveluneXp)
+        assertEquals(6, f.rewards.loadBalance().petCoins)
+    }
+
+    @Test
+    fun `retry after care mutation can recover missing reward exactly once`() {
+        val f = fixture(dirtiness = 90.0)
+
+        val care = f.petEngine.cleanOnce(
+            id = "pet-1",
+            interactionId = "recover-clean",
+            nowEpochMs = 1_000L,
+        )
+        assertTrue(care.applied)
+        assertEquals(5.0, care.pet.dirtiness, 0.001)
+        assertEquals(0, f.rewards.loadBalance().eveluneXp)
+
+        val recovered = f.engine.clean("pet-1", "recover-clean", 0.95, nowEpochMs = 1_000L)
+        val retry = f.engine.clean("pet-1", "recover-clean", 0.95, nowEpochMs = 1_000L)
+
+        assertEquals(CleanDecision.Completed, recovered.decision)
+        assertEquals(RewardDecision.GRANTED, recovered.reward?.decision)
+        assertEquals(CleanDecision.AlreadyCompleted, retry.decision)
         assertEquals(10, f.rewards.loadBalance().eveluneXp)
         assertEquals(6, f.rewards.loadBalance().petCoins)
     }
