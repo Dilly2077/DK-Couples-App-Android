@@ -2,7 +2,7 @@ name: Pet Engine Validation
 
 on:
   push:
-    branches: [ pet-engine-v0.1 ]
+    branches: [ pet-engine-v0.1, pet-assets-v0.2 ]
   workflow_dispatch:
 
 concurrency:

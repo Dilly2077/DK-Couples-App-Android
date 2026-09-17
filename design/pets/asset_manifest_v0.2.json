@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 2,
+  "project": "Evelune",
+  "pack": "Pet Care + Economy",
+  "branch": "pet-assets-v0.2",
+  "runtimeTarget": "app/src/main/res/drawable-nodpi/pets",
+  "sourceArtTarget": "design/pets/source",
+  "previousGeneratedPacks": [
+    {
+      "name": "evelune_pet_assets_v0.1",
+      "archive": "Evelune-pet-assets-v0.1.zip",
+      "status": "generated_previously_but_not_committed",
+      "knownContents": [
+        "8 PNG states each for Mocha/Puppy and Lumi/Kitten",
+        "8 egg hatch stage PNGs",
+        "props and thought bubbles",
+        "preview images",
+        "manifest.json",
+        "animation_presets.json",
+        "README.md",
+        "room_playroom.png",
+        "kitchen_feeding_room.png",
+        "bathroom_cleaning_room.png",
+        "garden_outdoor_room.png"
+      ]
+    },
+    {
+      "name": "Evelune pet expansion v0.1",
+      "archive": "Evelune-pet-expansion-v0.1.zip",
+      "status": "generated_previously_but_not_committed",
+      "knownContents": [
+        "Bunny",
+        "Duckling",
+        "Hedgehog",
+        "Ferret",
+        "Otter",
+        "Fox",
+        "Red Panda",
+        "Axolotl",
+        "Tiger",
+        "Dragon",
+        "8 transparent PNG states per pet",
+        "animated GIF preview per pet",
+        "per-pet manifest.json",
+        "rarity and hatch metadata"
+      ]
+    }
+  ],
+  "verifiedInGitHub": {
+    "pngBinaryCount": 0,
+    "note": "main and pet-engine-v0.1 contain no committed PNG asset binaries; current pet visuals are code/Compose placeholders and logical asset contracts."
+  },
+  "environments": [
+    {
+      "id": "playroom",
+      "legacyFilename": "room_playroom.png",
+      "legacyStatus": "previously_generated_not_committed",
+      "requiredLayers": ["playroom_bg", "play_props_back", "toy_zone", "play_foreground"]
+    },
+    {
+      "id": "kitchen",
+      "legacyFilename": "kitchen_feeding_room.png",
+      "legacyStatus": "previously_generated_not_committed",
+      "requiredLayers": ["kitchen_bg", "kitchen_back_furniture", "kitchen_chair_1", "kitchen_chair_2", "kitchen_table_front", "kitchen_foreground"]
+    },
+    {
+      "id": "bathroom",
+      "legacyFilename": "bathroom_cleaning_room.png",
+      "legacyStatus": "previously_generated_not_committed",
+      "requiredLayers": ["bathroom_bg", "bathroom_back_props", "bathroom_foreground"]
+    },
+    {
+      "id": "garden",
+      "legacyFilename": "garden_outdoor_room.png",
+      "legacyStatus": "previously_generated_not_committed",
+      "requiredLayers": ["garden_bg", "spa_back", "hot_tub_back_rim", "water_overlay", "bubble_overlay", "hot_tub_front_rim", "garden_foreground"]
+    }
+  ],
+  "petVisualStates": [
+    "idle_front",
+    "blink",
+    "walk_left",
+    "walk_right",
+    "happy",
+    "hungry",
+    "dirty",
+    "sleepy",
+    "carried",
+    "seated",
+    "eating",
+    "bathing",
+    "playing",
+    "level_up"
+  ],
+  "careProps": {
+    "feeding": ["food_bowl", "plate", "feeding_mat"],
+    "cleaning": ["sponge", "soap_bottle", "bubbles", "splash", "clean_sparkle", "dirt_overlay_01", "dirt_overlay_02"],
+    "play": ["toy_basket", "ball", "rope_toy", "plush_toy", "frisbee"]
+  },
+  "launchFoods": [
+    "kibble",
+    "fish",
+    "carrot",
+    "berry_bowl",
+    "apple_slices",
+    "milk_bowl",
+    "biscuit",
+    "salad_bowl",
+    "cupcake_treat",
+    "premium_feast_tray"
+  ],
+  "economyAssets": [
+    "pet_coin",
+    "xp_burst",
+    "xp_float",
+    "coin_float",
+    "level_up_badge",
+    "inventory_slot",
+    "shop_tile",
+    "valid_drop_glow"
+  ],
+  "interactionRules": {
+    "petsAreDraggable": true,
+    "dropTargetsHighlightOnHover": true,
+    "kitchenChairOpensFeedingFlow": true,
+    "gardenHotTubOpensCleaningFlow": true,
+    "toyTargetsOpenPlayFlow": true,
+    "visibleNeedBars": false,
+    "needsCommunicatedByExpressionAndThoughtBubble": true
+  },
+  "exportRules": {
+    "format": "PNG",
+    "transparentProps": true,
+    "environmentMinWidthPx": 1440,
+    "propSourceSizePx": "512-1024",
+    "consistentLighting": true,
+    "noBakedText": true,
+    "layeredScenesRequired": true
+  }
+}
