@@ -5,7 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.BoxWithConstraintsScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,8 +48,8 @@ fun PetDragDropLayer(
     targets: List<PetInteractionTarget> = DefaultPetInteractionTargets.all.filter { it.room == room },
     onPositionChanged: (NormalizedPosition) -> Unit = {},
     onTransition: (PetInteractionTransition) -> Unit,
-    targetContent: @Composable BoxWithConstraintsScope.(target: PetInteractionTarget, highlighted: Boolean) -> Unit = { target, highlighted ->
-        DefaultDropTarget(target, highlighted)
+    targetContent: @Composable (target: PetInteractionTarget, highlighted: Boolean) -> Unit = { _, highlighted ->
+        DefaultDropTarget(highlighted)
     },
     petContent: @Composable (carried: Boolean) -> Unit,
 ) {
@@ -136,14 +136,11 @@ fun PetDragDropLayer(
 }
 
 @Composable
-private fun BoxWithConstraintsScope.DefaultDropTarget(
-    target: PetInteractionTarget,
-    highlighted: Boolean,
-) {
+private fun DefaultDropTarget(highlighted: Boolean) {
     if (!highlighted) return
     Box(
         modifier = Modifier
-            .size(maxWidth, maxHeight)
+            .fillMaxSize()
             .border(
                 width = 3.dp,
                 color = EveluneRoseDeep.copy(alpha = 0.78f),
