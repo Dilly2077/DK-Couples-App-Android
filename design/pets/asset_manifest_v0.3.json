@@ -7,7 +7,9 @@
   "canonicalStyle": {
     "description": "Soft pastel illustrated storybook look using pink, lavender, cream, warm wood and spring greens; cozy floral decor; rounded pet furniture; paw and heart motifs; gentle warm daylight; polished but uncluttered.",
     "rejectStyle": "Earlier green-and-cream plastic/3D concept direction",
-    "sourceOfTruth": "design/pets/ASSET_PACK_V0.3.md"
+    "sourceOfTruth": "design/pets/ASSET_PACK_V0.3.md",
+    "durableStylePreview": "design/pets/source/style_reference/approved_style_reference_contact_sheet.svg",
+    "durableEnvironmentPreview": "design/pets/source/style_reference/approved_environment_contact_sheet.svg"
   },
   "environments": [
     {
@@ -130,7 +132,8 @@
   },
   "generationStatus": {
     "environmentConcepts": "approved",
-    "environmentBinaryImport": "pending",
+    "durableVisualPreviews": "stored_in_repo_as_svg_contact_sheets",
+    "productionEnvironmentBinaryImport": "pending",
     "foodSheetV03": "pending_generation_in_approved_style",
     "careToyEconomySheetV03": "pending_generation_in_approved_style",
     "mochaCareSheetV03": "pending_generation_in_approved_style",
