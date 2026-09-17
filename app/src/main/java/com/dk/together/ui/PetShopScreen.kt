@@ -236,8 +236,8 @@ private fun ProgressionPanel(
     val content: @Composable () -> Unit = {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatPill("✨", "Evelune", "Lv. ${globalProgress.level}", Modifier.weight(1f))
-                StatPill("🪙", "Pet Coins", balance.petCoins.toString(), Modifier.weight(1f))
+                StatPill("✦", "Evelune", "Lv. ${globalProgress.level}", Modifier.weight(1f))
+                StatPill("●", "Pet Coins", balance.petCoins.toString(), Modifier.weight(1f))
                 StatPill("♥", "Pet Bond", petProgress?.let { "Lv. ${it.progress.level}" } ?: "—", Modifier.weight(1f))
             }
             XpProgressRow("Evelune XP", globalProgress)
@@ -270,7 +270,7 @@ private fun StatPill(
 ) {
     Surface(modifier = modifier, shape = RoundedCornerShape(18.dp), color = Color(0xFFF7EDF9)) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(icon, fontSize = 18.sp)
+            Text(icon, fontSize = 18.sp, color = EveluneRoseDeep)
             Text(value, color = EveluneInk, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Text(label, color = EveluneMuted, fontSize = 9.sp)
         }
@@ -318,7 +318,7 @@ private fun PetShopItemCard(
         ) {
             Surface(shape = RoundedCornerShape(20.dp), color = Color(0xFFF7EDF9)) {
                 Box(Modifier.size(62.dp), contentAlignment = Alignment.Center) {
-                    Text(foodEmoji(item.food.id), fontSize = 31.sp)
+                    PetFoodArtwork(item.food.id, Modifier.size(50.dp))
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -336,25 +336,12 @@ private fun PetShopItemCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text("🪙", fontSize = 14.sp)
+                    Text("●", color = if (canAfford) Color.White else EveluneMuted, fontSize = 12.sp)
                     Text(item.coinCost.toString(), color = if (canAfford) Color.White else EveluneMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
             }
         }
     }
-}
-
-private fun foodEmoji(id: FoodId): String = when (id) {
-    FoodId.KIBBLE -> "🥣"
-    FoodId.FISH -> "🐟"
-    FoodId.CARROT -> "🥕"
-    FoodId.BERRY_BOWL -> "🫐"
-    FoodId.APPLE_SLICES -> "🍎"
-    FoodId.MILK_BOWL -> "🥛"
-    FoodId.BISCUIT -> "🦴"
-    FoodId.SALAD_BOWL -> "🥗"
-    FoodId.CUPCAKE_TREAT -> "🧁"
-    FoodId.PREMIUM_FEAST_TRAY -> "🍱"
 }
 
 @Composable
@@ -375,7 +362,7 @@ fun RewardLevelUpNotice(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("✨", fontSize = 30.sp)
+            Text("✦", color = EveluneRoseDeep, fontSize = 30.sp)
             Column {
                 Text("Level up!", color = EveluneRoseDeep, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold, fontSize = 19.sp)
                 val parts = buildList {

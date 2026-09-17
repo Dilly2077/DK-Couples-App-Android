@@ -242,7 +242,7 @@ private fun PlayToyTarget(target: PetInteractionTarget, highlighted: Boolean) {
                 shape = RoundedCornerShape(24.dp),
             ) {}
         }
-        Text(playToyEmoji(toy), fontSize = if (highlighted) 48.sp else 40.sp)
+        PetToyArtwork(toy, Modifier.size(if (highlighted) 58.dp else 48.dp))
     }
 }
 
@@ -282,8 +282,8 @@ private fun PlayActivityScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Text(playSpeciesEmoji(pet.species), fontSize = 92.sp)
-                    Text(playToyEmoji(toy), fontSize = 68.sp)
+                    StorybookPetAvatar(pet.species, PetVisualState.PLAYING, Modifier.size(135.dp))
+                    PetToyArtwork(toy, Modifier.size(86.dp))
                     Text(playInstruction(toy), color = EveluneInk, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold, fontSize = 23.sp)
                     PlayHearts(completedCount, tracker.requiredCount)
                     PlayGestureSurface(toy = toy, onGesture = ::register, modifier = Modifier.fillMaxWidth().weight(1f))
@@ -308,7 +308,7 @@ private fun PlayGestureSurface(
             shape = RoundedCornerShape(26.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text(if (toy == PlayToy.BALL) "Tap to bounce 🎾" else "Tap to cuddle 🧸", color = EveluneRoseDeep, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                Text(if (toy == PlayToy.BALL) "Tap to bounce" else "Tap to cuddle", color = EveluneRoseDeep, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
             }
         }
 
@@ -393,8 +393,8 @@ private fun PlayCompleteScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(13.dp),
             ) {
-                Text("✨", fontSize = 44.sp)
-                Text(playSpeciesEmoji(pet.species), fontSize = 90.sp)
+                StorybookPetAvatar(pet.species, PetVisualState.HAPPY, Modifier.size(150.dp))
+                PetToyArtwork(toy, Modifier.size(70.dp))
                 Text("${toy.displayName} time complete", color = EveluneInk, fontFamily = FontFamily.Serif, fontSize = 27.sp, fontWeight = FontWeight.Bold)
                 Text(message, color = EveluneMuted, fontSize = 13.sp)
                 Surface(onClick = onBackToPlayroom, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = EveluneRoseDeep) {
@@ -429,32 +429,26 @@ private fun PlayHeader(title: String, subtitle: String, onBack: () -> Unit) {
 
 @Composable
 private fun PlayroomBackdrop(modifier: Modifier = Modifier) {
-    Canvas(modifier) {
-        drawRect(Brush.verticalGradient(listOf(Color(0xFFFFE8F3), Color(0xFFE8DDF7), Color(0xFFFFF7F2))))
-        drawCircle(Color(0xFFFFFDF8).copy(alpha = 0.72f), size.width * 0.21f, Offset(size.width * 0.18f, size.height * 0.22f))
-        drawCircle(Color(0xFFF3D5EB).copy(alpha = 0.55f), size.width * 0.18f, Offset(size.width * 0.83f, size.height * 0.20f))
-        drawRect(Color(0xFFF4DCCB), Offset(0f, size.height * 0.76f), androidx.compose.ui.geometry.Size(size.width, size.height * 0.24f))
-    }
+    ApprovedEnvironmentArtwork(
+        environment = PetEnvironmentArtwork.PLAYROOM,
+        modifier = modifier,
+    )
 }
 
 @Composable
 private fun PlayPetAvatar(species: PetSpecies, carried: Boolean) {
-    Surface(
-        shape = CircleShape,
-        color = Color.White.copy(alpha = if (carried) 0.96f else 0.86f),
-        shadowElevation = if (carried) 6.dp else 2.dp,
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(playSpeciesEmoji(species), fontSize = 58.sp)
-        }
-    }
+    StorybookPetAvatar(
+        species = species,
+        state = if (carried) PetVisualState.CARRIED else PetVisualState.IDLE,
+        modifier = Modifier.fillMaxSize(),
+    )
 }
 
 @Composable
 private fun EmptyPlayroomScreen(onBack: () -> Unit, modifier: Modifier) {
     Box(modifier.fillMaxSize().background(EveluneBackground), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("🐾", fontSize = 54.sp)
+            PetCareArtwork("play", Modifier.size(64.dp))
             Text("Hatch a pet before opening the Playroom.", color = EveluneInk, fontWeight = FontWeight.SemiBold)
             Surface(onClick = onBack, shape = RoundedCornerShape(18.dp), color = EveluneRoseDeep) {
                 Text("Back", color = Color.White, modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp))
@@ -468,26 +462,4 @@ private fun playInstruction(toy: PlayToy): String = when (toy) {
     PlayToy.ROPE -> "Tug left and right"
     PlayToy.PLUSH -> "Give the plush some cuddles"
     PlayToy.FRISBEE -> "Flick the frisbee upward"
-}
-
-private fun playToyEmoji(toy: PlayToy): String = when (toy) {
-    PlayToy.BALL -> "🎾"
-    PlayToy.ROPE -> "🪢"
-    PlayToy.PLUSH -> "🧸"
-    PlayToy.FRISBEE -> "🥏"
-}
-
-private fun playSpeciesEmoji(species: PetSpecies): String = when (species) {
-    PetSpecies.PUPPY -> "🐶"
-    PetSpecies.KITTEN -> "🐱"
-    PetSpecies.BUNNY -> "🐰"
-    PetSpecies.DUCKLING -> "🐥"
-    PetSpecies.HEDGEHOG -> "🦔"
-    PetSpecies.FERRET -> "🐾"
-    PetSpecies.OTTER -> "🦦"
-    PetSpecies.FOX -> "🦊"
-    PetSpecies.RED_PANDA -> "🐾"
-    PetSpecies.AXOLOTL -> "🫧"
-    PetSpecies.TIGER -> "🐯"
-    PetSpecies.DRAGON -> "🐉"
 }
