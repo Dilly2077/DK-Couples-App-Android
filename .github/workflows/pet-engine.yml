@@ -2,7 +2,7 @@ name: Pet + Reward + Interaction + Care Validation
 
 on:
   push:
-    branches: [ pet-engine-v0.1, pet-assets-v0.2, pet-assets-v0.3, reward-engine-v0.1, pet-interaction-v0.1, kitchen-feeding-v0.1, garden-cleaning-v0.1, playroom-play-v0.1 ]
+    branches: [ pet-engine-v0.1, pet-assets-v0.2, pet-assets-v0.3, reward-engine-v0.1, pet-interaction-v0.1, kitchen-feeding-v0.1, garden-cleaning-v0.1, playroom-play-v0.1, pet-shop-progression-v0.1 ]
   workflow_dispatch:
 
 concurrency:
