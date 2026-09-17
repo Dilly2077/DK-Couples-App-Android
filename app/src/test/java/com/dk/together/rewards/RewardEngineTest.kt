@@ -1,6 +1,7 @@
 package com.dk.together.rewards
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -23,6 +24,7 @@ class RewardEngineTest {
         assertEquals(RewardDecision.GRANTED, first.decision)
         assertEquals(25, first.grant.eveluneXp)
         assertEquals(25, first.balanceAfter.eveluneXp)
+        assertFalse(first.globalLevelUp)
         assertEquals(RewardDecision.DUPLICATE, second.decision)
         assertEquals(0, second.grant.eveluneXp)
         assertEquals(25, second.balanceAfter.eveluneXp)
@@ -50,7 +52,7 @@ class RewardEngineTest {
     }
 
     @Test
-    fun `pet bond XP levels independently from global progression`() {
+    fun `pet bond XP levels independently from global progression and reports level up`() {
         val repository = InMemoryRewardRepository()
         val policy = RewardPolicy(
             mapOf(
@@ -61,13 +63,16 @@ class RewardEngineTest {
         )
         val engine = RewardEngine(repository, policy)
 
-        engine.reward(RewardEvent("play-1", RewardEventType.PET_PLAY, petId = "pet-a"))
+        val first = engine.reward(RewardEvent("play-1", RewardEventType.PET_PLAY, petId = "pet-a"))
         val second = engine.reward(RewardEvent("play-2", RewardEventType.PET_PLAY, petId = "pet-a"))
 
+        assertFalse(first.petLevelUp)
         assertEquals(120, second.petProgressAfter?.bondXp)
         assertEquals(2, second.petProgressAfter?.progress?.level)
         assertEquals(20, second.petProgressAfter?.progress?.xpIntoLevel)
         assertEquals(125, second.petProgressAfter?.progress?.xpForNextLevel)
+        assertEquals(1, second.petLevelsGained)
+        assertTrue(second.petLevelUp)
         assertEquals(1, second.globalProgressAfter.level)
     }
 
@@ -115,6 +120,23 @@ class RewardEngineTest {
         assertEquals(RewardDecision.DAILY_CAP_REACHED, capped.decision)
         assertEquals(RewardDecision.DUPLICATE, repeat.decision)
         assertEquals(10, engine.balance().eveluneXp)
+    }
+
+    @Test
+    fun `global XP result reports crossing level threshold`() {
+        val repository = InMemoryRewardRepository()
+        val policy = RewardPolicy(
+            mapOf(
+                RewardEventType.DAILY_CHALLENGE_COMPLETE to RewardRule(RewardGrant(eveluneXp = 100))
+            )
+        )
+        val engine = RewardEngine(repository, policy)
+
+        val result = engine.reward(RewardEvent("challenge-1", RewardEventType.DAILY_CHALLENGE_COMPLETE))
+
+        assertEquals(2, result.globalProgressAfter.level)
+        assertEquals(1, result.globalLevelsGained)
+        assertTrue(result.globalLevelUp)
     }
 
     @Test
