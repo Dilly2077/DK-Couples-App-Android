@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -52,7 +50,7 @@ import com.dk.together.ui.theme.EveluneRose
 import com.dk.together.ui.theme.EveluneRoseDeep
 import com.dk.together.ui.theme.EveluneRosePale
 
-private enum class PetPage { WORLD, HATCH, KITCHEN }
+private enum class PetPage { WORLD, HATCH, KITCHEN, GARDEN_CLEAN }
 private enum class PetKind { DOG_HUNGRY, CAT_DIRTY }
 
 @Composable
@@ -63,12 +61,17 @@ fun PetSectionScreen(modifier: Modifier = Modifier) {
             modifier = modifier,
             onHatch = { page = PetPage.HATCH },
             onKitchen = { page = PetPage.KITCHEN },
+            onClean = { page = PetPage.GARDEN_CLEAN },
         )
         PetPage.HATCH -> HatchEggScreen(
             modifier = modifier,
             onBack = { page = PetPage.WORLD },
         )
         PetPage.KITCHEN -> PersistentKitchenFeedingScreen(
+            modifier = modifier,
+            onBack = { page = PetPage.WORLD },
+        )
+        PetPage.GARDEN_CLEAN -> PersistentGardenCleaningScreen(
             modifier = modifier,
             onBack = { page = PetPage.WORLD },
         )
@@ -79,6 +82,7 @@ fun PetSectionScreen(modifier: Modifier = Modifier) {
 private fun PetWorldScreen(
     onHatch: () -> Unit,
     onKitchen: () -> Unit,
+    onClean: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.fillMaxSize().background(EveluneBackground)) {
@@ -91,7 +95,7 @@ private fun PetWorldScreen(
             item { PetWorldHero() }
             item { HatchShortcut(onHatch) }
             item { MeadowWorldCard() }
-            item { CareActions(onFeed = onKitchen) }
+            item { CareActions(onFeed = onKitchen, onClean = onClean) }
             item { PetFooterBanner() }
         }
     }
@@ -330,7 +334,7 @@ private fun MeadowCanvas(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun CareActions(onFeed: () -> Unit) {
+private fun CareActions(onFeed: () -> Unit, onClean: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = EveluneCard,
@@ -342,7 +346,7 @@ private fun CareActions(onFeed: () -> Unit) {
             Text("Their faces and thought bubbles tell you what they need.", color = EveluneMuted, fontSize = 13.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 CareAction("🍲", "Feed", "Take them to the Kitchen", Modifier.weight(1f), onClick = onFeed)
-                CareAction("🚿", "Clean", "Fresh and comfy", Modifier.weight(1f))
+                CareAction("🚿", "Clean", "Take them to the Garden", Modifier.weight(1f), onClick = onClean)
                 CareAction("🎾", "Play", "Make them smile", Modifier.weight(1f))
             }
         }

@@ -116,6 +116,11 @@ class PetEngine(
         return needsEngine.feed(pet, nowEpochMs, hungerReduction).also(repository::savePet)
     }
 
+    fun careWasApplied(interactionId: String): Boolean {
+        require(interactionId.isNotBlank())
+        return repository.hasCareEvent(interactionId)
+    }
+
     /**
      * Applies one feeding exactly once for a stable interaction id. This is used by the feeding
      * coordinator so process retries cannot reduce hunger multiple times.
@@ -147,6 +152,30 @@ class PetEngine(
     fun clean(id: String, nowEpochMs: Long): PetInstance {
         val pet = requireNotNull(repository.findPet(id)) { "Unknown pet id: $id" }
         return needsEngine.clean(pet, nowEpochMs).also(repository::savePet)
+    }
+
+    /** Applies one cleaning exactly once for a stable interaction id. */
+    fun cleanOnce(
+        id: String,
+        interactionId: String,
+        nowEpochMs: Long,
+    ): PetCareApplyResult {
+        require(interactionId.isNotBlank())
+        val current = requireNotNull(repository.findPet(id)) { "Unknown pet id: $id" }
+        if (repository.hasCareEvent(interactionId)) {
+            return PetCareApplyResult(current, applied = false)
+        }
+
+        val cleaned = needsEngine.clean(current, nowEpochMs)
+        val applied = repository.savePetForCare(
+            pet = cleaned,
+            interactionId = interactionId,
+            careType = "CLEAN",
+        )
+        return PetCareApplyResult(
+            pet = if (applied) cleaned else requireNotNull(repository.findPet(id)),
+            applied = applied,
+        )
     }
 
     fun hatchHistory(): HatchHistory = repository.loadHistory()
