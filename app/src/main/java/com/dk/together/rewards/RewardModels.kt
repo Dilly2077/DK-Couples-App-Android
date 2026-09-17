@@ -93,6 +93,32 @@ data class RewardResult(
     val petLevelUp: Boolean get() = petLevelsGained > 0
 }
 
+enum class CoinSpendDecision {
+    SPENT,
+    DUPLICATE,
+    INSUFFICIENT_FUNDS,
+}
+
+data class CoinSpendReceipt(
+    val spendId: String,
+    val amount: Int,
+    val reason: String,
+    val createdAtEpochMs: Long,
+) {
+    init {
+        require(spendId.isNotBlank())
+        require(amount > 0)
+        require(reason.isNotBlank())
+    }
+}
+
+data class CoinSpendResult(
+    val decision: CoinSpendDecision,
+    val amount: Int,
+    val balanceAfter: RewardBalance,
+    val receipt: CoinSpendReceipt? = null,
+)
+
 object RewardProgression {
     const val DEFAULT_BASE_XP = 100
     const val DEFAULT_GROWTH_XP = 25
