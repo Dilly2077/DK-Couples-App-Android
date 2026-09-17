@@ -1,12 +1,12 @@
-name: Pet Engine Validation
+name: Pet + Reward Engine Validation
 
 on:
   push:
-    branches: [ pet-engine-v0.1, pet-assets-v0.2 ]
+    branches: [ pet-engine-v0.1, pet-assets-v0.2, pet-assets-v0.3, reward-engine-v0.1 ]
   workflow_dispatch:
 
 concurrency:
-  group: pet-engine-${{ github.ref }}
+  group: pet-reward-engine-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -38,7 +38,7 @@ jobs:
         with:
           gradle-version: '9.6.0'
 
-      - name: Pet engine unit tests
+      - name: Unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
 
       - name: Verify app still compiles

@@ -4,6 +4,9 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import com.dk.together.rewards.AndroidRewardRepository
+import com.dk.together.rewards.RewardEngine
+import com.dk.together.rewards.RewardHooks
 
 enum class LocalActor(val key: String, val display: String) {
     YOU("you", "You"),
@@ -63,6 +66,7 @@ class EveluneStore(context: Context) {
     private val appContext = context.applicationContext
     private val helper = Db(appContext)
     private val prefs = appContext.getSharedPreferences("evelune_preview", Context.MODE_PRIVATE)
+    private val rewardHooks = RewardHooks(RewardEngine(AndroidRewardRepository(appContext)))
 
     var currentActor: LocalActor
         get() = if (prefs.getString("actor", LocalActor.YOU.key) == LocalActor.PARTNER.key) LocalActor.PARTNER else LocalActor.YOU
@@ -73,14 +77,24 @@ class EveluneStore(context: Context) {
         set(value) { prefs.edit().putString("partner_name", value.trim().ifBlank { "your partner" }).apply() }
 
     fun save(contentId: String, contentType: String, actor: LocalActor, payload: String, at: Long = System.currentTimeMillis()) {
+        val existing = completedBy(contentId, contentType, actor)
+        val cleanPayload = payload.trim()
         val values = ContentValues().apply {
             put("content_id", contentId)
             put("content_type", contentType)
             put("actor", actor.key)
-            put("payload", payload)
+            put("payload", cleanPayload)
             put("submitted_at", at)
         }
         helper.writableDatabase.insertWithOnConflict("submissions", null, values, SQLiteDatabase.CONFLICT_REPLACE)
+
+        if (existing == null && cleanPayload.isNotBlank()) {
+            when (contentType) {
+                TYPE_QUESTION -> rewardHooks.questionAnswered(contentId, actor.key)
+                TYPE_CARD -> rewardHooks.dailyCardCompleted(contentId, actor.key)
+                TYPE_CHALLENGE -> rewardHooks.dailyChallengeCompleted(contentId, actor.key)
+            }
+        }
     }
 
     fun pair(contentId: String, contentType: String): PairSubmission {
@@ -128,7 +142,7 @@ class EveluneStore(context: Context) {
     fun sendMessage(threadId: String, actor: LocalActor, body: String, at: Long = System.currentTimeMillis()): Long {
         val clean = body.trim()
         require(clean.isNotBlank())
-        return helper.writableDatabase.insertOrThrow(
+        val id = helper.writableDatabase.insertOrThrow(
             "chat_messages",
             null,
             ContentValues().apply {
@@ -138,6 +152,8 @@ class EveluneStore(context: Context) {
                 put("sent_at", at)
             }
         )
+        rewardHooks.conversationMessage(threadId, id, actor.key)
+        return id
     }
 
     fun messages(threadId: String): List<ChatMessage> {
@@ -173,8 +189,8 @@ class EveluneStore(context: Context) {
     ): Long {
         val db = helper.writableDatabase
         db.beginTransaction()
-        return try {
-            val memoryId = db.insertOrThrow(
+        val memoryId = try {
+            val id = db.insertOrThrow(
                 "memories",
                 null,
                 ContentValues().apply {
@@ -190,7 +206,7 @@ class EveluneStore(context: Context) {
                     "memory_media",
                     null,
                     ContentValues().apply {
-                        put("memory_id", memoryId)
+                        put("memory_id", id)
                         put("uri", item.first)
                         put("mime_type", item.second)
                         put("position", index)
@@ -198,10 +214,12 @@ class EveluneStore(context: Context) {
                 )
             }
             db.setTransactionSuccessful()
-            memoryId
+            id
         } finally {
             db.endTransaction()
         }
+        rewardHooks.memoryCreated("timeline-$memoryId", currentActor.key)
+        return memoryId
     }
 
     fun allMemories(): List<MemoryEntry> {
