@@ -12,12 +12,21 @@ enum class PetVisualState {
     HAPPY,
     HUNGRY,
     DIRTY,
-    SLEEPY
+    SLEEPY,
+
+    // Care + interaction states introduced by the v0.2 asset contract.
+    CARRIED,
+    SEATED,
+    EATING,
+    BATHING,
+    PLAYING,
+    LEVEL_UP
 }
 
 enum class ThoughtBubbleAsset {
     FOOD,
-    BATH
+    BATH,
+    PLAY
 }
 
 enum class HatchVisualState {
