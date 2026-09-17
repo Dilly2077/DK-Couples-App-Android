@@ -8,24 +8,7 @@ import android.database.sqlite.SQLiteOpenHelper
 class AndroidRewardRepository(context: Context) : RewardRepository {
     private val helper = Db(context.applicationContext)
 
-    override fun loadBalance(): RewardBalance {
-        helper.readableDatabase.query(
-            "reward_wallet",
-            arrayOf("evelune_xp", "pet_coins"),
-            "id = 1",
-            null,
-            null,
-            null,
-            null,
-            "1",
-        ).use { cursor ->
-            if (!cursor.moveToFirst()) return RewardBalance()
-            return RewardBalance(
-                eveluneXp = cursor.getInt(cursor.getColumnIndexOrThrow("evelune_xp")),
-                petCoins = cursor.getInt(cursor.getColumnIndexOrThrow("pet_coins")),
-            )
-        }
-    }
+    override fun loadBalance(): RewardBalance = queryBalance(helper.readableDatabase)
 
     override fun loadPetBondXp(petId: String): Int {
         helper.readableDatabase.query(
@@ -156,6 +139,94 @@ class AndroidRewardRepository(context: Context) : RewardRepository {
         }
     }
 
+    override fun spendCoins(
+        spendId: String,
+        amount: Int,
+        reason: String,
+        createdAtEpochMs: Long,
+    ): CoinSpendResult {
+        require(spendId.isNotBlank())
+        require(amount > 0)
+        require(reason.isNotBlank())
+
+        val db = helper.writableDatabase
+        db.beginTransaction()
+        return try {
+            val existing = db.query(
+                "coin_spends",
+                arrayOf("spend_id", "amount", "reason", "created_at"),
+                "spend_id = ?",
+                arrayOf(spendId),
+                null,
+                null,
+                null,
+                "1",
+            ).use { cursor ->
+                if (!cursor.moveToFirst()) null else CoinSpendReceipt(
+                    spendId = cursor.getString(cursor.getColumnIndexOrThrow("spend_id")),
+                    amount = cursor.getInt(cursor.getColumnIndexOrThrow("amount")),
+                    reason = cursor.getString(cursor.getColumnIndexOrThrow("reason")),
+                    createdAtEpochMs = cursor.getLong(cursor.getColumnIndexOrThrow("created_at")),
+                )
+            }
+
+            if (existing != null) {
+                require(existing.amount == amount && existing.reason == reason) {
+                    "Spend id already belongs to a different purchase"
+                }
+                val balance = queryBalance(db)
+                db.setTransactionSuccessful()
+                return CoinSpendResult(
+                    decision = CoinSpendDecision.DUPLICATE,
+                    amount = amount,
+                    balanceAfter = balance,
+                    receipt = existing,
+                )
+            }
+
+            val before = queryBalance(db)
+            if (before.petCoins < amount) {
+                db.setTransactionSuccessful()
+                return CoinSpendResult(
+                    decision = CoinSpendDecision.INSUFFICIENT_FUNDS,
+                    amount = amount,
+                    balanceAfter = before,
+                )
+            }
+
+            val receipt = CoinSpendReceipt(
+                spendId = spendId,
+                amount = amount,
+                reason = reason,
+                createdAtEpochMs = createdAtEpochMs,
+            )
+            db.insertOrThrow(
+                "coin_spends",
+                null,
+                ContentValues().apply {
+                    put("spend_id", receipt.spendId)
+                    put("amount", receipt.amount)
+                    put("reason", receipt.reason)
+                    put("created_at", receipt.createdAtEpochMs)
+                },
+            )
+            db.execSQL(
+                "UPDATE reward_wallet SET pet_coins = pet_coins - ? WHERE id = 1",
+                arrayOf(amount),
+            )
+            val after = before.copy(petCoins = before.petCoins - amount)
+            db.setTransactionSuccessful()
+            CoinSpendResult(
+                decision = CoinSpendDecision.SPENT,
+                amount = amount,
+                balanceAfter = after,
+                receipt = receipt,
+            )
+        } finally {
+            db.endTransaction()
+        }
+    }
+
     override fun recent(limit: Int): List<RewardLedgerEntry> {
         if (limit <= 0) return emptyList()
         val out = mutableListOf<RewardLedgerEntry>()
@@ -198,7 +269,26 @@ class AndroidRewardRepository(context: Context) : RewardRepository {
         return out
     }
 
-    private class Db(context: Context) : SQLiteOpenHelper(context, "evelune_rewards.db", null, 1) {
+    private fun queryBalance(db: SQLiteDatabase): RewardBalance {
+        db.query(
+            "reward_wallet",
+            arrayOf("evelune_xp", "pet_coins"),
+            "id = 1",
+            null,
+            null,
+            null,
+            null,
+            "1",
+        ).use { cursor ->
+            if (!cursor.moveToFirst()) return RewardBalance()
+            return RewardBalance(
+                eveluneXp = cursor.getInt(cursor.getColumnIndexOrThrow("evelune_xp")),
+                petCoins = cursor.getInt(cursor.getColumnIndexOrThrow("pet_coins")),
+            )
+        }
+    }
+
+    private class Db(context: Context) : SQLiteOpenHelper(context, "evelune_rewards.db", null, 2) {
         override fun onCreate(db: SQLiteDatabase) {
             db.execSQL(
                 """
@@ -236,8 +326,25 @@ class AndroidRewardRepository(context: Context) : RewardRepository {
             db.execSQL("CREATE INDEX idx_reward_events_type_time ON reward_events(event_type, created_at DESC)")
             db.execSQL("CREATE INDEX idx_reward_events_actor_time ON reward_events(actor_key, created_at DESC)")
             db.execSQL("CREATE INDEX idx_reward_events_pet_time ON reward_events(pet_id, created_at DESC)")
+            createCoinSpendsTable(db)
         }
 
-        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+            if (oldVersion < 2) createCoinSpendsTable(db)
+        }
+
+        private fun createCoinSpendsTable(db: SQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS coin_spends (
+                    spend_id TEXT PRIMARY KEY,
+                    amount INTEGER NOT NULL CHECK(amount > 0),
+                    reason TEXT NOT NULL,
+                    created_at INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_coin_spends_time ON coin_spends(created_at DESC)")
+        }
     }
 }
