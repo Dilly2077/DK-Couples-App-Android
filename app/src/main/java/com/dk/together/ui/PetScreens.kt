@@ -52,7 +52,7 @@ import com.dk.together.ui.theme.EveluneRose
 import com.dk.together.ui.theme.EveluneRoseDeep
 import com.dk.together.ui.theme.EveluneRosePale
 
-private enum class PetPage { WORLD, HATCH }
+private enum class PetPage { WORLD, HATCH, KITCHEN }
 private enum class PetKind { DOG_HUNGRY, CAT_DIRTY }
 
 @Composable
@@ -62,8 +62,13 @@ fun PetSectionScreen(modifier: Modifier = Modifier) {
         PetPage.WORLD -> PetWorldScreen(
             modifier = modifier,
             onHatch = { page = PetPage.HATCH },
+            onKitchen = { page = PetPage.KITCHEN },
         )
         PetPage.HATCH -> HatchEggScreen(
+            modifier = modifier,
+            onBack = { page = PetPage.WORLD },
+        )
+        PetPage.KITCHEN -> PersistentKitchenFeedingScreen(
             modifier = modifier,
             onBack = { page = PetPage.WORLD },
         )
@@ -73,6 +78,7 @@ fun PetSectionScreen(modifier: Modifier = Modifier) {
 @Composable
 private fun PetWorldScreen(
     onHatch: () -> Unit,
+    onKitchen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.fillMaxSize().background(EveluneBackground)) {
@@ -85,7 +91,7 @@ private fun PetWorldScreen(
             item { PetWorldHero() }
             item { HatchShortcut(onHatch) }
             item { MeadowWorldCard() }
-            item { CareActions() }
+            item { CareActions(onFeed = onKitchen) }
             item { PetFooterBanner() }
         }
     }
@@ -324,7 +330,7 @@ private fun MeadowCanvas(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun CareActions() {
+private fun CareActions(onFeed: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = EveluneCard,
@@ -335,7 +341,7 @@ private fun CareActions() {
             Text("Give them some care ♥", color = EveluneInk, fontFamily = FontFamily.Serif, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             Text("Their faces and thought bubbles tell you what they need.", color = EveluneMuted, fontSize = 13.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                CareAction("🍲", "Feed", "Fill their tummies", Modifier.weight(1f))
+                CareAction("🍲", "Feed", "Take them to the Kitchen", Modifier.weight(1f), onClick = onFeed)
                 CareAction("🚿", "Clean", "Fresh and comfy", Modifier.weight(1f))
                 CareAction("🎾", "Play", "Make them smile", Modifier.weight(1f))
             }
@@ -344,8 +350,16 @@ private fun CareActions() {
 }
 
 @Composable
-private fun CareAction(icon: String, title: String, subtitle: String, modifier: Modifier = Modifier) {
+private fun CareAction(
+    icon: String,
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+) {
     Surface(
+        onClick = onClick ?: {},
+        enabled = onClick != null,
         modifier = modifier,
         color = Color(0xFFF7EDF9),
         shape = RoundedCornerShape(21.dp),
