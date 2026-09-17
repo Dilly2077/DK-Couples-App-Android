@@ -3,142 +3,148 @@
   "project": "Evelune",
   "pack": "Pet Assets v0.3",
   "branch": "pet-assets-v0.3",
-  "status": "style_locked_environments_approved_interaction_art_pending",
+  "status": "step_e_f_generated_and_split_binary_import_pending_connector_limit",
   "canonicalStyle": {
     "description": "Soft pastel illustrated storybook look using pink, lavender, cream, warm wood and spring greens; cozy floral decor; rounded pet furniture; paw and heart motifs; gentle warm daylight; polished but uncluttered.",
     "rejectStyle": "Earlier green-and-cream plastic/3D concept direction",
     "sourceOfTruth": "design/pets/ASSET_PACK_V0.3.md",
     "durableStylePreview": "design/pets/source/style_reference/approved_style_reference_contact_sheet.svg",
-    "durableEnvironmentPreview": "design/pets/source/style_reference/approved_environment_contact_sheet.svg"
+    "durableEnvironmentPreview": "design/pets/source/style_reference/approved_environment_contact_sheet.svg",
+    "exportRecord": "design/pets/ASSET_EXPORT_V0.3.md"
   },
   "environments": [
     {
       "key": "environment_playroom",
       "displayName": "Living Room / Playroom",
-      "status": "approved",
+      "status": "generated_runtime_export",
       "purpose": "default indoor pet environment and play space",
-      "expectedRepoPath": "design/pets/source/environments/playroom/playroom_bg_v1.webp"
+      "runtimeFilename": "environment_playroom.webp"
     },
     {
       "key": "environment_kitchen",
       "displayName": "Kitchen",
-      "status": "approved",
+      "status": "generated_runtime_export",
       "purpose": "feeding environment",
-      "expectedRepoPath": "design/pets/source/environments/kitchen/kitchen_bg_v1.webp"
+      "runtimeFilename": "environment_kitchen.webp"
     },
     {
       "key": "environment_garden",
       "displayName": "Outdoor Garden",
-      "status": "approved",
+      "status": "generated_runtime_export",
       "purpose": "free roam and outdoor play",
-      "expectedRepoPath": "design/pets/source/environments/garden/garden_bg_v1.webp"
+      "runtimeFilename": "environment_garden.webp"
     },
     {
       "key": "environment_spa_hot_tub",
       "displayName": "Outdoor Hot-Tub Spa",
-      "status": "approved",
+      "status": "generated_runtime_export",
       "purpose": "primary cleaning mechanic",
-      "expectedRepoPath": "design/pets/source/environments/spa/spa_hot_tub_bg_v1.webp"
+      "runtimeFilename": "environment_spa_hot_tub.webp"
     }
   ],
   "environmentLayers": {
     "spa": [
-      "spa_background",
-      "hot_tub_back_rim",
-      "pet_layer",
-      "hot_tub_water_overlay",
-      "hot_tub_bubbles_overlay",
-      "hot_tub_front_rim",
-      "spa_foreground"
+      "environment_spa_hot_tub.webp",
+      "hot_tub_back_rim.png",
+      "hot_tub_water_overlay.png",
+      "hot_tub_bubbles_overlay.png",
+      "hot_tub_front_rim.png",
+      "spa_foreground.png"
     ],
     "kitchen": [
-      "kitchen_background",
-      "kitchen_back_furniture",
-      "feeding_seat_anchor",
-      "feeding_station",
-      "pet_layer",
-      "kitchen_foreground"
+      "environment_kitchen.webp",
+      "feeding_seat_anchor.png",
+      "feeding_station.png",
+      "feeding_valid_drop_glow.png"
     ]
   },
   "foods": [
-    "food_kibble",
-    "food_fish",
-    "food_carrot",
-    "food_berry_bowl",
-    "food_apple_slices",
-    "food_milk_bowl",
-    "food_biscuit",
-    "food_salad_bowl",
-    "food_cupcake_treat",
-    "food_premium_feast_tray"
+    "food_kibble.png",
+    "food_fish.png",
+    "food_carrot.png",
+    "food_berry_bowl.png",
+    "food_apple_slices.png",
+    "food_milk_bowl.png",
+    "food_biscuit.png",
+    "food_salad_bowl.png",
+    "food_cupcake_treat.png",
+    "food_premium_feast_tray.png"
   ],
   "cleaningProps": [
-    "cleaning_sponge",
-    "cleaning_soap_bottle",
-    "cleaning_bubbles",
-    "cleaning_splash",
-    "cleaning_sparkle",
-    "dirt_overlay_01",
-    "dirt_overlay_02",
-    "cleaning_towel_stack"
+    "cleaning_sponge.png",
+    "cleaning_soap_bottle.png",
+    "cleaning_bubbles.png",
+    "cleaning_splash.png",
+    "cleaning_sparkle.png",
+    "dirt_overlay_01.png",
+    "dirt_overlay_02.png",
+    "cleaning_towel_stack.png"
   ],
   "playProps": [
-    "toy_basket",
-    "toy_ball",
-    "toy_yarn_ball",
-    "toy_rope",
-    "toy_plush_bone",
-    "toy_tunnel",
-    "toy_frisbee"
+    "toy_basket.png",
+    "toy_ball.png",
+    "toy_yarn_ball.png",
+    "toy_rope.png",
+    "toy_plush_bone.png",
+    "toy_tunnel.png",
+    "toy_frisbee.png"
   ],
   "economyUi": [
-    "pet_coin",
-    "xp_burst",
-    "xp_float",
-    "pet_coin_float",
-    "level_up_badge",
-    "inventory_slot",
-    "shop_tile",
-    "valid_drop_glow",
-    "thought_food",
-    "thought_bath",
-    "thought_play"
+    "pet_coin.png",
+    "xp_burst.png",
+    "xp_float.png",
+    "pet_coin_float.png",
+    "level_up_badge.png",
+    "inventory_slot.png",
+    "shop_tile.png",
+    "valid_drop_glow.png",
+    "thought_food.png",
+    "thought_bath.png",
+    "thought_play.png"
   ],
-  "petVisualStates": [
-    "idle_front",
-    "blink",
-    "walk_left",
-    "walk_right",
-    "happy",
-    "hungry",
-    "dirty",
-    "sleepy",
-    "carried",
-    "seated",
-    "eating",
-    "bathing",
-    "playing",
-    "level_up"
-  ],
-  "firstCarePets": [
-    "mocha",
-    "lumi"
-  ],
+  "careStates": {
+    "mocha": [
+      "mocha_carried.png",
+      "mocha_seated.png",
+      "mocha_eating.png",
+      "mocha_bathing.png",
+      "mocha_playing.png",
+      "mocha_level_up.png"
+    ],
+    "lumi": [
+      "lumi_carried.png",
+      "lumi_seated.png",
+      "lumi_eating.png",
+      "lumi_bathing.png",
+      "lumi_playing.png",
+      "lumi_level_up.png"
+    ]
+  },
   "rewardModelDependency": {
     "global": "Evelune XP from meaningful completed app actions",
     "petSpecific": "Pet Bond XP from direct care/play with a specific pet",
     "currency": "Pet Coins",
     "antiFarm": "Do not reward repeated no-op taps or redundant actions"
   },
+  "export": {
+    "runtimeAssetCount": 60,
+    "runtimeBytes": 8809119,
+    "runtimeArchive": "evelune_pet_assets_v03_runtime.zip",
+    "runtimeArchiveSha256": "9459fbe279812513a1072e72f4dce24cb73aedadecf7e02fb4dfefe5375f4309",
+    "fullArchive": "evelune_pet_assets_v03.zip",
+    "fullArchiveSha256": "9bbcf7ea7e379a1a7e233a54174cd9810ba18d985c1ecc11198f16495fc9c00b"
+  },
   "generationStatus": {
-    "environmentConcepts": "approved",
+    "environmentConcepts": "approved_and_exported",
     "durableVisualPreviews": "stored_in_repo_as_svg_contact_sheets",
-    "productionEnvironmentBinaryImport": "pending",
-    "foodSheetV03": "pending_generation_in_approved_style",
-    "careToyEconomySheetV03": "pending_generation_in_approved_style",
-    "mochaCareSheetV03": "pending_generation_in_approved_style",
-    "lumiCareSheetV03": "pending_generation_in_approved_style",
-    "thoughtBubbleSheetV03": "pending_generation_in_approved_style",
-    "individualTransparentExports": "pending"
+    "foodSheetV03": "generated_and_split",
+    "careToyEconomySheetV03": "generated_and_split",
+    "mochaCareSheetV03": "generated_and_split",
+    "lumiCareSheetV03": "generated_and_split",
+    "thoughtBubbleSheetV03": "generated_and_split",
+    "individualTransparentExports": "complete",
+    "hotTubInteractionLayers": "complete_flat_base_plus_overlays_strategy",
+    "kitchenInteractionLayers": "complete",
+    "productionBinaryImport": "pending_due_current_github_connector_binary_upload_limit"
   }
 }
