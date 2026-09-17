@@ -23,6 +23,12 @@ class RewardEngine(
             require(!event.petId.isNullOrBlank()) { "${event.type} requires petId because it awards Pet Bond XP" }
         }
 
+        val balanceBefore = repository.loadBalance()
+        val globalLevelBefore = RewardProgression.progress(balanceBefore.eveluneXp).level
+        val petLevelBefore = event.petId?.let {
+            RewardProgression.progress(repository.loadPetBondXp(it)).level
+        }
+
         val decision: RewardDecision
         val grant: RewardGrant
         when {
@@ -56,7 +62,21 @@ class RewardEngine(
         )
 
         if (!repository.record(entry)) return duplicateResult(event)
-        return resultFor(decision, grant, event.petId)
+
+        val balanceAfter = repository.loadBalance()
+        val globalProgressAfter = RewardProgression.progress(balanceAfter.eveluneXp)
+        val petProgressAfter = event.petId?.let { petProgress(it) }
+        return RewardResult(
+            decision = decision,
+            grant = grant,
+            balanceAfter = balanceAfter,
+            globalProgressAfter = globalProgressAfter,
+            petProgressAfter = petProgressAfter,
+            globalLevelsGained = (globalProgressAfter.level - globalLevelBefore).coerceAtLeast(0),
+            petLevelsGained = if (petLevelBefore == null || petProgressAfter == null) 0 else {
+                (petProgressAfter.progress.level - petLevelBefore).coerceAtLeast(0)
+            },
+        )
     }
 
     fun balance(): RewardBalance = repository.loadBalance()
@@ -74,24 +94,14 @@ class RewardEngine(
 
     fun recentRewards(limit: Int = 100): List<RewardLedgerEntry> = repository.recent(limit)
 
-    private fun duplicateResult(event: RewardEvent): RewardResult = resultFor(
-        decision = RewardDecision.DUPLICATE,
-        grant = RewardGrant.NONE,
-        petId = event.petId,
-    )
-
-    private fun resultFor(
-        decision: RewardDecision,
-        grant: RewardGrant,
-        petId: String?,
-    ): RewardResult {
+    private fun duplicateResult(event: RewardEvent): RewardResult {
         val balance = repository.loadBalance()
         return RewardResult(
-            decision = decision,
-            grant = grant,
+            decision = RewardDecision.DUPLICATE,
+            grant = RewardGrant.NONE,
             balanceAfter = balance,
             globalProgressAfter = RewardProgression.progress(balance.eveluneXp),
-            petProgressAfter = petId?.let { petProgress(it) },
+            petProgressAfter = event.petId?.let { petProgress(it) },
         )
     }
 }
