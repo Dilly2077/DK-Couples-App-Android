@@ -73,7 +73,7 @@ class AndroidFeedingRepository(context: Context) : FeedingRepository {
         val db = helper.writableDatabase
         db.beginTransaction()
         try {
-            val current = quantity(foodId)
+            val current = queryQuantity(db, foodId)
             db.insertWithOnConflict(
                 "food_inventory",
                 null,
@@ -84,6 +84,86 @@ class AndroidFeedingRepository(context: Context) : FeedingRepository {
                 SQLiteDatabase.CONFLICT_REPLACE,
             )
             db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    override fun creditOnce(
+        creditId: String,
+        foodId: FoodId,
+        quantity: Int,
+        createdAtEpochMs: Long,
+    ): InventoryCreditResult {
+        require(creditId.isNotBlank())
+        require(quantity > 0)
+
+        val db = helper.writableDatabase
+        db.beginTransaction()
+        return try {
+            val existing = db.query(
+                "inventory_credits",
+                arrayOf("credit_id", "food_id", "quantity", "created_at"),
+                "credit_id = ?",
+                arrayOf(creditId),
+                null,
+                null,
+                null,
+                "1",
+            ).use { cursor ->
+                if (!cursor.moveToFirst()) null else InventoryCreditReceipt(
+                    creditId = cursor.getString(cursor.getColumnIndexOrThrow("credit_id")),
+                    foodId = FoodId.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("food_id"))),
+                    quantity = cursor.getInt(cursor.getColumnIndexOrThrow("quantity")),
+                    createdAtEpochMs = cursor.getLong(cursor.getColumnIndexOrThrow("created_at")),
+                )
+            }
+
+            if (existing != null) {
+                require(existing.foodId == foodId && existing.quantity == quantity) {
+                    "Credit id already belongs to a different inventory credit"
+                }
+                val result = InventoryCreditResult(
+                    decision = InventoryCreditDecision.DUPLICATE,
+                    receipt = existing,
+                    quantityAfter = queryQuantity(db, foodId),
+                )
+                db.setTransactionSuccessful()
+                return result
+            }
+
+            val current = queryQuantity(db, foodId)
+            db.insertWithOnConflict(
+                "food_inventory",
+                null,
+                ContentValues().apply {
+                    put("food_id", foodId.name)
+                    put("quantity", current + quantity)
+                },
+                SQLiteDatabase.CONFLICT_REPLACE,
+            )
+            val receipt = InventoryCreditReceipt(
+                creditId = creditId,
+                foodId = foodId,
+                quantity = quantity,
+                createdAtEpochMs = createdAtEpochMs,
+            )
+            db.insertOrThrow(
+                "inventory_credits",
+                null,
+                ContentValues().apply {
+                    put("credit_id", receipt.creditId)
+                    put("food_id", receipt.foodId.name)
+                    put("quantity", receipt.quantity)
+                    put("created_at", receipt.createdAtEpochMs)
+                },
+            )
+            db.setTransactionSuccessful()
+            InventoryCreditResult(
+                decision = InventoryCreditDecision.CREDITED,
+                receipt = receipt,
+                quantityAfter = current + quantity,
+            )
         } finally {
             db.endTransaction()
         }
@@ -224,7 +304,7 @@ class AndroidFeedingRepository(context: Context) : FeedingRepository {
         )
     }
 
-    private class Db(context: Context) : SQLiteOpenHelper(context, "evelune_feeding.db", null, 1) {
+    private class Db(context: Context) : SQLiteOpenHelper(context, "evelune_feeding.db", null, 2) {
         override fun onCreate(db: SQLiteDatabase) {
             db.execSQL(
                 """
@@ -246,9 +326,26 @@ class AndroidFeedingRepository(context: Context) : FeedingRepository {
                 )
                 """.trimIndent()
             )
+            createInventoryCreditsTable(db)
         }
 
-        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+            if (oldVersion < 2) createInventoryCreditsTable(db)
+        }
+
+        private fun createInventoryCreditsTable(db: SQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS inventory_credits (
+                    credit_id TEXT PRIMARY KEY,
+                    food_id TEXT NOT NULL,
+                    quantity INTEGER NOT NULL CHECK(quantity > 0),
+                    created_at INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_inventory_credits_time ON inventory_credits(created_at DESC)")
+        }
     }
 
     private companion object {

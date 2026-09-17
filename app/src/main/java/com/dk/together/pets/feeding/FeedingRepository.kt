@@ -26,11 +26,41 @@ data class ReserveFoodResult(
     val remainingQuantity: Int,
 )
 
+enum class InventoryCreditDecision {
+    CREDITED,
+    DUPLICATE,
+}
+
+data class InventoryCreditReceipt(
+    val creditId: String,
+    val foodId: FoodId,
+    val quantity: Int,
+    val createdAtEpochMs: Long,
+)
+
+data class InventoryCreditResult(
+    val decision: InventoryCreditDecision,
+    val receipt: InventoryCreditReceipt,
+    val quantityAfter: Int,
+)
+
 interface FeedingRepository {
     fun seedStarterInventoryIfEmpty(starter: Map<FoodId, Int>)
     fun inventory(): Map<FoodId, Int>
     fun quantity(foodId: FoodId): Int
     fun add(foodId: FoodId, quantity: Int)
+
+    /**
+     * Adds stock exactly once for a stable credit id. Used by the Pet Shop so a process retry can
+     * never duplicate purchased food after Pet Coins were already spent.
+     */
+    fun creditOnce(
+        creditId: String,
+        foodId: FoodId,
+        quantity: Int,
+        createdAtEpochMs: Long,
+    ): InventoryCreditResult
+
     fun receipt(interactionId: String): FeedingReceipt?
 
     /**
@@ -50,6 +80,7 @@ interface FeedingRepository {
 class InMemoryFeedingRepository : FeedingRepository {
     private val stock = linkedMapOf<FoodId, Int>()
     private val receipts = linkedMapOf<String, FeedingReceipt>()
+    private val credits = linkedMapOf<String, InventoryCreditReceipt>()
 
     override fun seedStarterInventoryIfEmpty(starter: Map<FoodId, Int>) {
         if (stock.isNotEmpty()) return
@@ -66,6 +97,36 @@ class InMemoryFeedingRepository : FeedingRepository {
     override fun add(foodId: FoodId, quantity: Int) {
         require(quantity > 0)
         stock[foodId] = (stock[foodId] ?: 0) + quantity
+    }
+
+    override fun creditOnce(
+        creditId: String,
+        foodId: FoodId,
+        quantity: Int,
+        createdAtEpochMs: Long,
+    ): InventoryCreditResult {
+        require(creditId.isNotBlank())
+        require(quantity > 0)
+        val existing = credits[creditId]
+        if (existing != null) {
+            require(existing.foodId == foodId && existing.quantity == quantity) {
+                "Credit id already belongs to a different inventory credit"
+            }
+            return InventoryCreditResult(
+                decision = InventoryCreditDecision.DUPLICATE,
+                receipt = existing,
+                quantityAfter = this.quantity(foodId),
+            )
+        }
+
+        add(foodId, quantity)
+        val receipt = InventoryCreditReceipt(creditId, foodId, quantity, createdAtEpochMs)
+        credits[creditId] = receipt
+        return InventoryCreditResult(
+            decision = InventoryCreditDecision.CREDITED,
+            receipt = receipt,
+            quantityAfter = this.quantity(foodId),
+        )
     }
 
     override fun receipt(interactionId: String): FeedingReceipt? = receipts[interactionId]

@@ -50,7 +50,7 @@ import com.dk.together.ui.theme.EveluneRose
 import com.dk.together.ui.theme.EveluneRoseDeep
 import com.dk.together.ui.theme.EveluneRosePale
 
-private enum class PetPage { WORLD, HATCH, KITCHEN, GARDEN_CLEAN, PLAYROOM }
+private enum class PetPage { WORLD, HATCH, KITCHEN, GARDEN_CLEAN, PLAYROOM, SHOP }
 private enum class PetKind { DOG_HUNGRY, CAT_DIRTY }
 
 @Composable
@@ -63,6 +63,7 @@ fun PetSectionScreen(modifier: Modifier = Modifier) {
             onKitchen = { page = PetPage.KITCHEN },
             onClean = { page = PetPage.GARDEN_CLEAN },
             onPlay = { page = PetPage.PLAYROOM },
+            onShop = { page = PetPage.SHOP },
         )
         PetPage.HATCH -> HatchEggScreen(
             modifier = modifier,
@@ -80,6 +81,10 @@ fun PetSectionScreen(modifier: Modifier = Modifier) {
             modifier = modifier,
             onBack = { page = PetPage.WORLD },
         )
+        PetPage.SHOP -> PersistentPetShopScreen(
+            modifier = modifier,
+            onBack = { page = PetPage.WORLD },
+        )
     }
 }
 
@@ -89,6 +94,7 @@ private fun PetWorldScreen(
     onKitchen: () -> Unit,
     onClean: () -> Unit,
     onPlay: () -> Unit,
+    onShop: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.fillMaxSize().background(EveluneBackground)) {
@@ -99,6 +105,7 @@ private fun PetWorldScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item { PetWorldHero() }
+            item { PetProgressionOverviewCard(onShop = onShop) }
             item { HatchShortcut(onHatch) }
             item { MeadowWorldCard() }
             item { CareActions(onFeed = onKitchen, onClean = onClean, onPlay = onPlay) }

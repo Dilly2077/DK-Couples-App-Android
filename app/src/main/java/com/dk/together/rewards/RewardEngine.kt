@@ -79,6 +79,13 @@ class RewardEngine(
         )
     }
 
+    fun spendCoins(
+        spendId: String,
+        amount: Int,
+        reason: String,
+        createdAtEpochMs: Long = System.currentTimeMillis(),
+    ): CoinSpendResult = repository.spendCoins(spendId, amount, reason, createdAtEpochMs)
+
     fun balance(): RewardBalance = repository.loadBalance()
 
     fun globalProgress(): LevelProgress = RewardProgression.progress(repository.loadBalance().eveluneXp)
