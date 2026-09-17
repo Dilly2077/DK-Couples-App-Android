@@ -71,10 +71,14 @@ class PetNeedsEngine(
         )
     }
 
-    fun feed(pet: PetInstance, nowEpochMs: Long): PetInstance {
+    fun feed(pet: PetInstance, nowEpochMs: Long): PetInstance =
+        feed(pet, nowEpochMs, tuning.feedReduction)
+
+    fun feed(pet: PetInstance, nowEpochMs: Long, hungerReduction: Double): PetInstance {
+        require(hungerReduction > 0.0 && hungerReduction <= 100.0)
         val advanced = advance(pet, nowEpochMs)
         return advanced.copy(
-            hunger = (advanced.hunger - tuning.feedReduction).coerceAtLeast(0.0),
+            hunger = (advanced.hunger - hungerReduction).coerceAtLeast(0.0),
             behaviour = PetBehaviour.HAPPY
         )
     }
