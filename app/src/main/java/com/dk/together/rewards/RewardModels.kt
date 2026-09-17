@@ -86,7 +86,12 @@ data class RewardResult(
     val balanceAfter: RewardBalance,
     val globalProgressAfter: LevelProgress,
     val petProgressAfter: PetBondProgress?,
-)
+    val globalLevelsGained: Int = 0,
+    val petLevelsGained: Int = 0,
+) {
+    val globalLevelUp: Boolean get() = globalLevelsGained > 0
+    val petLevelUp: Boolean get() = petLevelsGained > 0
+}
 
 object RewardProgression {
     const val DEFAULT_BASE_XP = 100
