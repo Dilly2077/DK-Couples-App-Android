@@ -28,8 +28,8 @@ data class CleaningResult(
 )
 
 /**
- * Small deterministic grid used by the close-up sponge interaction. Each scrub marks nearby cells
- * as clean, which gives the UI a stable 0..1 completion fraction without exposing pet dirtiness.
+ * Deterministic grid used by the close-up sponge interaction. Each scrub marks nearby cells clean,
+ * giving the UI a stable 0..1 completion fraction without exposing hidden pet dirtiness.
  */
 class CleaningCoverageTracker(
     val columns: Int = 12,
@@ -110,7 +110,8 @@ class CleaningEngine(
             return CleaningResult(CleanDecision.CoverageIncomplete, pet, coverage)
         }
 
-        if (pet.dirtiness < minimumMeaningfulDirtiness) {
+        val careWasAlreadyApplied = petEngine.careWasApplied(interactionId)
+        if (!careWasAlreadyApplied && pet.dirtiness < minimumMeaningfulDirtiness) {
             return CleaningResult(CleanDecision.PetNotDirtyEnough, pet, coverage)
         }
 
@@ -126,7 +127,7 @@ class CleaningEngine(
             meaningful = true,
         )
 
-        val decision = if (!care.applied && reward.decision == RewardDecision.DUPLICATE) {
+        val decision = if (careWasAlreadyApplied && reward.decision == RewardDecision.DUPLICATE) {
             CleanDecision.AlreadyCompleted
         } else {
             CleanDecision.Completed
