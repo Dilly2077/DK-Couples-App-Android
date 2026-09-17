@@ -1,0 +1,52 @@
+name: Pet + Reward + Interaction + Care Validation
+
+on:
+  push:
+    branches: [ pet-engine-v0.1, pet-assets-v0.2, pet-assets-v0.3, reward-engine-v0.1, pet-interaction-v0.1, kitchen-feeding-v0.1, garden-cleaning-v0.1, playroom-play-v0.1, pet-shop-progression-v0.1, pet-system-integration-v0.1 ]
+  workflow_dispatch:
+
+concurrency:
+  group: pet-reward-interaction-care-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          SDKMANAGER="${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-37.0" "build-tools;37.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+
+      - name: Unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
+
+      - name: Verify app still compiles
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Upload integrated debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: evelune-pet-system-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
