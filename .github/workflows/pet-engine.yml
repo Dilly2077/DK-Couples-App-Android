@@ -1,12 +1,12 @@
-name: Pet + Reward Engine Validation
+name: Pet + Reward + Interaction Validation
 
 on:
   push:
-    branches: [ pet-engine-v0.1, pet-assets-v0.2, pet-assets-v0.3, reward-engine-v0.1 ]
+    branches: [ pet-engine-v0.1, pet-assets-v0.2, pet-assets-v0.3, reward-engine-v0.1, pet-interaction-v0.1 ]
   workflow_dispatch:
 
 concurrency:
-  group: pet-reward-engine-${{ github.ref }}
+  group: pet-reward-interaction-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
