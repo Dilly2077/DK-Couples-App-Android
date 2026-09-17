@@ -73,7 +73,7 @@ Rooms currently defined:
 
 V0.1 plans movement inside one room. Automatic room-to-room travel can be layered on later.
 
-## Persistence boundary
+## Persistence
 
 `PetEngineRepository` defines storage operations for:
 
@@ -81,7 +81,12 @@ V0.1 plans movement inside one room. Automatic room-to-room travel can be layere
 - current active egg
 - owned pet instances
 
-`InMemoryPetEngineRepository` exists for tests. When this branch is integrated into an app release, implement this interface using the chosen persistent Android storage layer.
+Two implementations are included:
+
+- `InMemoryPetEngineRepository` for unit tests and isolated development.
+- `AndroidPetEngineRepository`, a durable local SQLite implementation ready for later app integration.
+
+The Android repository stores the active egg using absolute start/end timestamps, so incubation survives app closure, process death, and device restart. It also persists each individual pet's room, position, hidden hunger/dirt values, current visual behaviour, hatch date, and pity/duplicate history.
 
 ## Asset binding
 
@@ -104,7 +109,7 @@ The generated PNG asset packs can therefore be assigned later without changing t
 For the later Evelune update:
 
 1. Import the pet/environment asset packs into Android resources.
-2. Implement a persistent `PetEngineRepository`.
+2. Instantiate `AndroidPetEngineRepository` and `PetEngine` from the app layer.
 3. Bind `PetAssetKey` / hatch visual states to concrete resources.
 4. Connect the existing Pets UI to `PetEngine`.
 5. Animate `MovementPlan` results in Compose.
