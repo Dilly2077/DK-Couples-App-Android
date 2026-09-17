@@ -4,6 +4,9 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import com.dk.together.rewards.AndroidRewardRepository
+import com.dk.together.rewards.RewardEngine
+import com.dk.together.rewards.RewardHooks
 
 data class QuestionMessage(
     val id: Long,
@@ -25,7 +28,9 @@ data class MemoryMoment(
 )
 
 class EveluneSocialStore(context: Context) {
-    private val helper = Db(context.applicationContext)
+    private val appContext = context.applicationContext
+    private val helper = Db(appContext)
+    private val rewardHooks = RewardHooks(RewardEngine(AndroidRewardRepository(appContext)))
 
     fun addMessage(
         questionId: String,
@@ -33,13 +38,17 @@ class EveluneSocialStore(context: Context) {
         text: String,
         at: Long = System.currentTimeMillis(),
     ): Long {
+        val clean = text.trim()
+        require(clean.isNotBlank())
         val values = ContentValues().apply {
             put("question_id", questionId)
             put("actor", actor.key)
-            put("text", text.trim())
+            put("text", clean)
             put("sent_at", at)
         }
-        return helper.writableDatabase.insert("question_messages", null, values)
+        val id = helper.writableDatabase.insertOrThrow("question_messages", null, values)
+        rewardHooks.questionChatMessage(questionId, id, actor.key)
+        return id
     }
 
     fun messages(questionId: String): List<QuestionMessage> {
@@ -106,7 +115,10 @@ class EveluneSocialStore(context: Context) {
             put("media_uris", mediaUris.joinToString(URI_SEPARATOR))
             put("created_at", at)
         }
-        return helper.writableDatabase.insert("memories", null, values)
+        val id = helper.writableDatabase.insertOrThrow("memories", null, values)
+        val meaningful = title.isNotBlank() || description.isNotBlank() || whySpecial.isNotBlank() || favouritePart.isNotBlank() || mediaUris.isNotEmpty()
+        rewardHooks.memoryCreated("social-$id", meaningful = meaningful)
+        return id
     }
 
     fun memories(): List<MemoryMoment> {
