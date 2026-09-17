@@ -50,7 +50,7 @@ import com.dk.together.ui.theme.EveluneRose
 import com.dk.together.ui.theme.EveluneRoseDeep
 import com.dk.together.ui.theme.EveluneRosePale
 
-private enum class PetPage { WORLD, HATCH, KITCHEN, GARDEN_CLEAN }
+private enum class PetPage { WORLD, HATCH, KITCHEN, GARDEN_CLEAN, PLAYROOM }
 private enum class PetKind { DOG_HUNGRY, CAT_DIRTY }
 
 @Composable
@@ -62,6 +62,7 @@ fun PetSectionScreen(modifier: Modifier = Modifier) {
             onHatch = { page = PetPage.HATCH },
             onKitchen = { page = PetPage.KITCHEN },
             onClean = { page = PetPage.GARDEN_CLEAN },
+            onPlay = { page = PetPage.PLAYROOM },
         )
         PetPage.HATCH -> HatchEggScreen(
             modifier = modifier,
@@ -75,6 +76,10 @@ fun PetSectionScreen(modifier: Modifier = Modifier) {
             modifier = modifier,
             onBack = { page = PetPage.WORLD },
         )
+        PetPage.PLAYROOM -> PersistentPlayroomScreen(
+            modifier = modifier,
+            onBack = { page = PetPage.WORLD },
+        )
     }
 }
 
@@ -83,6 +88,7 @@ private fun PetWorldScreen(
     onHatch: () -> Unit,
     onKitchen: () -> Unit,
     onClean: () -> Unit,
+    onPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.fillMaxSize().background(EveluneBackground)) {
@@ -95,7 +101,7 @@ private fun PetWorldScreen(
             item { PetWorldHero() }
             item { HatchShortcut(onHatch) }
             item { MeadowWorldCard() }
-            item { CareActions(onFeed = onKitchen, onClean = onClean) }
+            item { CareActions(onFeed = onKitchen, onClean = onClean, onPlay = onPlay) }
             item { PetFooterBanner() }
         }
     }
@@ -334,7 +340,7 @@ private fun MeadowCanvas(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun CareActions(onFeed: () -> Unit, onClean: () -> Unit) {
+private fun CareActions(onFeed: () -> Unit, onClean: () -> Unit, onPlay: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = EveluneCard,
@@ -347,7 +353,7 @@ private fun CareActions(onFeed: () -> Unit, onClean: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 CareAction("🍲", "Feed", "Take them to the Kitchen", Modifier.weight(1f), onClick = onFeed)
                 CareAction("🚿", "Clean", "Take them to the Garden", Modifier.weight(1f), onClick = onClean)
-                CareAction("🎾", "Play", "Make them smile", Modifier.weight(1f))
+                CareAction("🎾", "Play", "Take them to the Playroom", Modifier.weight(1f), onClick = onPlay)
             }
         }
     }
