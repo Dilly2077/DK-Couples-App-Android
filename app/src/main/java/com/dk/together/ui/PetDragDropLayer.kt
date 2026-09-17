@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -64,8 +65,11 @@ fun PetDragDropLayer(
     }
 
     BoxWithConstraints(modifier = modifier) {
+        val density = LocalDensity.current
         val sceneWidth = maxWidth
         val sceneHeight = maxHeight
+        val sceneWidthPx = with(density) { sceneWidth.toPx() }.coerceAtLeast(1f)
+        val sceneHeightPx = with(density) { sceneHeight.toPx() }.coerceAtLeast(1f)
 
         targets.forEach { target ->
             val width = sceneWidth * (target.bounds.right - target.bounds.left).toFloat()
@@ -93,7 +97,7 @@ fun PetDragDropLayer(
                 .size(petSize)
                 .scale(carriedScale)
                 .zIndex(if (carried) 5f else 3f)
-                .pointerInput(petId, room, sceneWidth, sceneHeight) {
+                .pointerInput(petId, room, sceneWidthPx, sceneHeightPx) {
                     detectDragGesturesAfterLongPress(
                         onDragStart = {
                             session = engine.beginDrag(
@@ -114,12 +118,11 @@ fun PetDragDropLayer(
                                 session = engine.finishTransition(session)
                             }
                         },
-                        onDrag = { _, dragAmount ->
-                            val widthPx = sceneWidth.toPx().coerceAtLeast(1f)
-                            val heightPx = sceneHeight.toPx().coerceAtLeast(1f)
+                        onDrag = { change, dragAmount ->
+                            change.consume()
                             val next = NormalizedPosition(
-                                x = (session.position.x + dragAmount.x / widthPx).coerceIn(0.0, 1.0),
-                                y = (session.position.y + dragAmount.y / heightPx).coerceIn(0.0, 1.0),
+                                x = (session.position.x + dragAmount.x / sceneWidthPx).coerceIn(0.0, 1.0),
+                                y = (session.position.y + dragAmount.y / sceneHeightPx).coerceIn(0.0, 1.0),
                             )
                             session = engine.dragTo(session, next)
                             onPositionChanged(next)
