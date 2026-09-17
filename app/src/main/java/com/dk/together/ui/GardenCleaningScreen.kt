@@ -201,7 +201,7 @@ private fun GardenHotTubScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Text("🛁", fontSize = 28.sp)
+                    PetCareArtwork("clean", Modifier.size(44.dp))
                     Column {
                         Text("Hot-tub cleaning", color = EveluneInk, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                         Text("Drop your pet into the tub to start. No care meters are shown.", color = EveluneMuted, fontSize = 11.sp)
@@ -263,7 +263,7 @@ private fun CleaningCloseUpScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Text("🧽", fontSize = 28.sp)
+                        PetCareArtwork("clean", Modifier.size(40.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
                                 when {
@@ -324,15 +324,11 @@ private fun ScrubPetSurface(
             },
         contentAlignment = Alignment.Center,
     ) {
+        ApprovedEnvironmentArtwork(PetEnvironmentArtwork.SPA, Modifier.fillMaxSize())
         Canvas(Modifier.fillMaxSize()) {
             drawRoundRect(
-                brush = Brush.verticalGradient(listOf(Color(0xFFD8F1F4), Color(0xFFECE6FA))),
+                color = Color.White.copy(alpha = 0.20f),
                 cornerRadius = CornerRadius(28.dp.toPx()),
-            )
-            drawOval(
-                color = Color.White.copy(alpha = 0.62f),
-                topLeft = Offset(size.width * 0.17f, size.height * 0.18f),
-                size = Size(size.width * 0.66f, size.height * 0.68f),
             )
 
             val cellW = size.width / tracker.columns
@@ -355,7 +351,11 @@ private fun ScrubPetSurface(
                 drawCircle(Color(0xFFFFD8A8).copy(alpha = 0.95f), radius = 18.dp.toPx(), center = p)
             }
         }
-        Text(speciesEmoji(species), fontSize = 132.sp)
+        StorybookPetAvatar(
+            species = species,
+            state = PetVisualState.BATHING,
+            modifier = Modifier.size(220.dp),
+        )
     }
 }
 
@@ -379,8 +379,7 @@ private fun GardenCleaningCompleteScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(13.dp),
             ) {
-                Text("✨", fontSize = 46.sp)
-                Text(speciesEmoji(pet.species), fontSize = 92.sp)
+                StorybookPetAvatar(pet.species, PetVisualState.HAPPY, Modifier.size(150.dp))
                 Text("Fresh and comfy", color = EveluneInk, fontFamily = FontFamily.Serif, fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 Text(message, color = EveluneMuted, fontSize = 13.sp)
                 Surface(onClick = onBackToGarden, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = EveluneRoseDeep) {
@@ -415,65 +414,26 @@ private fun GardenHeader(title: String, subtitle: String, onBack: () -> Unit) {
 
 @Composable
 private fun GardenScene(modifier: Modifier = Modifier) {
-    Canvas(modifier) {
-        drawRect(Brush.verticalGradient(listOf(Color(0xFFFFE7F2), Color(0xFFDDECCF), Color(0xFFC8E1B8))))
-        drawCircle(Color(0xFFF7C9DC).copy(alpha = 0.70f), size.width * 0.16f, Offset(size.width * 0.15f, size.height * 0.18f))
-        drawCircle(Color(0xFF9BC78B), size.width * 0.21f, Offset(size.width * 0.18f, size.height * 0.34f))
-        drawCircle(Color(0xFF86BA7C), size.width * 0.18f, Offset(size.width * 0.88f, size.height * 0.32f))
-        drawRect(Color(0xFF9A705A), Offset(size.width * 0.11f, size.height * 0.33f), Size(size.width * 0.06f, size.height * 0.33f))
-
-        drawRoundRect(
-            color = Color(0xFFFFF9F6),
-            topLeft = Offset(size.width * 0.58f, size.height * 0.30f),
-            size = Size(size.width * 0.39f, size.height * 0.40f),
-            cornerRadius = CornerRadius(34.dp.toPx()),
-        )
-        drawOval(
-            color = Color(0xFFBDEAF2),
-            topLeft = Offset(size.width * 0.61f, size.height * 0.38f),
-            size = Size(size.width * 0.33f, size.height * 0.22f),
-        )
-        drawOval(
-            color = Color.White.copy(alpha = 0.72f),
-            topLeft = Offset(size.width * 0.66f, size.height * 0.42f),
-            size = Size(size.width * 0.22f, size.height * 0.12f),
-        )
-        repeat(8) { index ->
-            val x = size.width * (0.12f + (index % 4) * 0.18f)
-            val y = size.height * (0.70f + (index / 4) * 0.09f)
-            drawCircle(if (index % 2 == 0) Color.White else EveluneRose.copy(alpha = 0.7f), 4.dp.toPx(), Offset(x, y))
-        }
-    }
+    ApprovedEnvironmentArtwork(
+        environment = PetEnvironmentArtwork.SPA,
+        modifier = modifier,
+    )
 }
 
 @Composable
 private fun GardenPetAvatar(species: PetSpecies, carried: Boolean) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(speciesEmoji(species), fontSize = if (carried) 68.sp else 62.sp)
-        if (carried) Text("♡", color = EveluneRoseDeep, fontSize = 19.sp)
-    }
-}
-
-private fun speciesEmoji(species: PetSpecies): String = when (species) {
-    PetSpecies.PUPPY -> "🐶"
-    PetSpecies.KITTEN -> "🐱"
-    PetSpecies.BUNNY -> "🐰"
-    PetSpecies.DUCKLING -> "🐥"
-    PetSpecies.HEDGEHOG -> "🦔"
-    PetSpecies.FERRET -> "🐾"
-    PetSpecies.OTTER -> "🦦"
-    PetSpecies.FOX -> "🦊"
-    PetSpecies.RED_PANDA -> "🐾"
-    PetSpecies.AXOLOTL -> "🫧"
-    PetSpecies.TIGER -> "🐯"
-    PetSpecies.DRAGON -> "🐲"
+    StorybookPetAvatar(
+        species = species,
+        state = if (carried) PetVisualState.CARRIED else PetVisualState.DIRTY,
+        modifier = Modifier.size(if (carried) 94.dp else 88.dp),
+    )
 }
 
 @Composable
 private fun EmptyGardenScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize().background(EveluneBackground), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("🛁", fontSize = 50.sp)
+            PetCareArtwork("clean", Modifier.size(64.dp))
             Text("The Garden is ready", color = EveluneInk, fontFamily = FontFamily.Serif, fontSize = 28.sp, fontWeight = FontWeight.Bold)
             Text("Hatch a pet first, then bring them here for a bath.", color = EveluneMuted, fontSize = 14.sp)
             Surface(onClick = onBack, shape = RoundedCornerShape(20.dp), color = EveluneRoseDeep) {
