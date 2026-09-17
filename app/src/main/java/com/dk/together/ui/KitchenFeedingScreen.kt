@@ -64,7 +64,7 @@ private enum class KitchenPhase { ROAMING, SEATED, EATING, CELEBRATING }
 
 /**
  * Persistent Kitchen feeding route. It uses the real local pet, feeding-inventory and reward stores.
- * Production v0.3 images can replace the temporary Compose-drawn kitchen/pet without changing flow.
+ * The approved v0.3 Kitchen artwork is rendered from the bundled production contact sheet.
  */
 @Composable
 fun PersistentKitchenFeedingScreen(
@@ -304,16 +304,10 @@ private fun FoodInventoryTray(
 
 @Composable
 private fun KitchenScene(modifier: Modifier = Modifier) {
-    Canvas(modifier) {
-        drawRect(Brush.verticalGradient(listOf(Color(0xFFFFEAF3), Color(0xFFFFF7F0), Color(0xFFF2D8C7))))
-        drawRect(Color(0xFFFFFBF8), Offset(0f, size.height * .12f), Size(size.width, size.height * .45f))
-        drawRect(Color(0xFFC99572), Offset(0f, size.height * .54f), Size(size.width, size.height * .035f))
-        drawRect(Color(0xFFFFFDF9), Offset(size.width * .04f, size.height * .25f), Size(size.width * .52f, size.height * .30f))
-        drawRoundRect(Color(0xFFF5AFC5), Offset(size.width * .70f, size.height * .18f), Size(size.width * .23f, size.height * .38f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(24.dp.toPx()))
-        drawRoundRect(Color(0xFFD5A17C), Offset(size.width * .10f, size.height * .64f), Size(size.width * .25f, size.height * .22f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx()))
-        drawRoundRect(Color(0xFFD5A17C), Offset(size.width * .65f, size.height * .64f), Size(size.width * .25f, size.height * .22f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx()))
-        drawCircle(Color(0xFFF5BED2), size.width * .055f, Offset(size.width * .50f, size.height * .25f))
-    }
+    ApprovedEnvironmentArtwork(
+        environment = PetEnvironmentArtwork.KITCHEN,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -323,25 +317,17 @@ private fun PetKitchenAvatar(
     seated: Boolean,
     eating: Boolean,
 ) {
-    val emoji = when (species) {
-        PetSpecies.PUPPY -> "🐶"
-        PetSpecies.KITTEN -> "🐱"
-        PetSpecies.BUNNY -> "🐰"
-        PetSpecies.DUCKLING -> "🐥"
-        PetSpecies.HEDGEHOG -> "🦔"
-        PetSpecies.FERRET -> "🐾"
-        PetSpecies.OTTER -> "🦦"
-        PetSpecies.FOX -> "🦊"
-        PetSpecies.RED_PANDA -> "🐾"
-        PetSpecies.AXOLOTL -> "🫧"
-        PetSpecies.TIGER -> "🐯"
-        PetSpecies.DRAGON -> "🐲"
+    val state = when {
+        eating -> PetVisualState.EATING
+        carried -> PetVisualState.CARRIED
+        seated -> PetVisualState.SEATED
+        else -> PetVisualState.IDLE
     }
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        if (eating) Text("🍽️", fontSize = 23.sp)
-        Text(emoji, fontSize = if (carried) 66.sp else 62.sp)
-        if (seated && !eating) Text("♡", color = EveluneRoseDeep, fontSize = 20.sp)
-    }
+    StorybookPetAvatar(
+        species = species,
+        state = state,
+        modifier = Modifier.size(if (carried) 92.dp else 86.dp),
+    )
 }
 
 private fun foodEmoji(food: FoodId): String = when (food) {
@@ -361,7 +347,7 @@ private fun foodEmoji(food: FoodId): String = when (food) {
 private fun EmptyKitchenScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize().background(EveluneBackground), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("🍽️", fontSize = 50.sp)
+            PetCareArtwork("feed", Modifier.size(64.dp))
             Text("The Kitchen is ready", color = EveluneInk, fontFamily = FontFamily.Serif, fontSize = 28.sp, fontWeight = FontWeight.Bold)
             Text("Hatch a pet first, then bring them here to eat.", color = EveluneMuted, fontSize = 14.sp)
             Surface(onClick = onBack, shape = RoundedCornerShape(20.dp), color = EveluneRoseDeep) {
