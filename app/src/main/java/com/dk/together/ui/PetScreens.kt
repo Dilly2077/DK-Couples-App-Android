@@ -31,17 +31,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dk.together.pets.engine.PetSpecies
 import com.dk.together.ui.theme.EveluneBackground
 import com.dk.together.ui.theme.EveluneCard
 import com.dk.together.ui.theme.EveluneInk
@@ -126,7 +122,11 @@ private fun PetWorldHero() {
                 fontSize = 38.sp,
                 lineHeight = 40.sp,
             )
-            Text("🐾", fontSize = 29.sp)
+            Surface(shape = CircleShape, color = EveluneRosePale) {
+                Box(Modifier.size(38.dp), contentAlignment = Alignment.Center) {
+                    StorybookPetAvatar(PetSpecies.PUPPY, PetVisualState.HAPPY, Modifier.size(34.dp))
+                }
+            }
         }
         Text("Explore, play and discover together. ♥", color = EveluneMuted, fontSize = 16.sp)
         Text(
@@ -158,7 +158,7 @@ private fun HatchShortcut(onHatch: () -> Unit) {
         ) {
             Surface(shape = CircleShape, color = Color(0xFFFFF8FB)) {
                 Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
-                    Text("🥚", fontSize = 29.sp)
+                    PetEggArtwork(Modifier.size(44.dp))
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -185,7 +185,7 @@ private fun MeadowWorldCard() {
             ) {
                 Surface(shape = CircleShape, color = Color(0xFFF0E5FA)) {
                     Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
-                        Text("🌎", fontSize = 23.sp)
+                        StorybookPetAvatar(PetSpecies.BUNNY, PetVisualState.HAPPY, Modifier.size(37.dp))
                     }
                 }
                 Column(Modifier.weight(1f).padding(start = 10.dp)) {
@@ -205,7 +205,7 @@ private fun MeadowWorldCard() {
                     modifier = Modifier.align(Alignment.BottomStart).padding(start = 40.dp, bottom = 44.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    NeedBubble("Hungry 🍎")
+                    NeedBubble("Hungry")
                     PetSprite(PetKind.DOG_HUNGRY)
                     PetName("Mocha", "Lv. 3")
                 }
@@ -214,7 +214,7 @@ private fun MeadowWorldCard() {
                     modifier = Modifier.align(Alignment.BottomEnd).padding(end = 46.dp, bottom = 44.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    NeedBubble("Bath? 🫧")
+                    NeedBubble("Bath?")
                     PetSprite(PetKind.CAT_DIRTY)
                     PetName("Lumi", "Lv. 2")
                 }
@@ -249,101 +249,26 @@ private fun PetName(name: String, level: String) {
 
 @Composable
 private fun PetSprite(kind: PetKind) {
-    Canvas(Modifier.size(104.dp)) {
-        val cx = size.width / 2f
-        val base = size.height * .75f
-        when (kind) {
-            PetKind.DOG_HUNGRY -> {
-                drawOval(Color(0xFFFFF3E6), Offset(cx - 28.dp.toPx(), base - 22.dp.toPx()), Size(56.dp.toPx(), 35.dp.toPx()))
-                drawCircle(Color(0xFFFFF7EC), radius = 31.dp.toPx(), center = Offset(cx, base - 43.dp.toPx()))
-                drawOval(Color(0xFFC8946E), Offset(cx - 38.dp.toPx(), base - 64.dp.toPx()), Size(23.dp.toPx(), 42.dp.toPx()))
-                drawOval(Color(0xFFC8946E), Offset(cx + 15.dp.toPx(), base - 64.dp.toPx()), Size(23.dp.toPx(), 42.dp.toPx()))
-                drawCircle(Color(0xFF4A3543), 3.2.dp.toPx(), Offset(cx - 11.dp.toPx(), base - 46.dp.toPx()))
-                drawCircle(Color(0xFF4A3543), 3.2.dp.toPx(), Offset(cx + 11.dp.toPx(), base - 46.dp.toPx()))
-                drawLine(Color(0xFF4A3543), Offset(cx - 14.dp.toPx(), base - 55.dp.toPx()), Offset(cx - 7.dp.toPx(), base - 52.dp.toPx()), 1.8.dp.toPx())
-                drawLine(Color(0xFF4A3543), Offset(cx + 7.dp.toPx(), base - 52.dp.toPx()), Offset(cx + 14.dp.toPx(), base - 55.dp.toPx()), 1.8.dp.toPx())
-                drawCircle(Color(0xFF6D4B4F), 3.5.dp.toPx(), Offset(cx, base - 35.dp.toPx()))
-                drawLine(Color(0xFF6D4B4F), Offset(cx - 7.dp.toPx(), base - 28.dp.toPx()), Offset(cx, base - 33.dp.toPx()), 1.8.dp.toPx())
-                drawLine(Color(0xFF6D4B4F), Offset(cx, base - 33.dp.toPx()), Offset(cx + 7.dp.toPx(), base - 28.dp.toPx()), 1.8.dp.toPx())
-                drawCircle(Color(0xFF8BD0F3), 2.5.dp.toPx(), Offset(cx - 12.dp.toPx(), base - 38.dp.toPx()))
-            }
-            PetKind.CAT_DIRTY -> {
-                drawOval(Color(0xFFFFF6ED), Offset(cx - 27.dp.toPx(), base - 22.dp.toPx()), Size(54.dp.toPx(), 36.dp.toPx()))
-                val leftEar = Path().apply {
-                    moveTo(cx - 26.dp.toPx(), base - 58.dp.toPx())
-                    lineTo(cx - 15.dp.toPx(), base - 81.dp.toPx())
-                    lineTo(cx - 4.dp.toPx(), base - 58.dp.toPx())
-                    close()
-                }
-                val rightEar = Path().apply {
-                    moveTo(cx + 4.dp.toPx(), base - 58.dp.toPx())
-                    lineTo(cx + 15.dp.toPx(), base - 81.dp.toPx())
-                    lineTo(cx + 26.dp.toPx(), base - 58.dp.toPx())
-                    close()
-                }
-                drawPath(leftEar, Color(0xFFFFE8E5))
-                drawPath(rightEar, Color(0xFFFFE8E5))
-                drawCircle(Color(0xFFFFFAF3), radius = 31.dp.toPx(), center = Offset(cx, base - 43.dp.toPx()))
-                drawLine(Color(0xFF4A3543), Offset(cx - 15.dp.toPx(), base - 46.dp.toPx()), Offset(cx - 7.dp.toPx(), base - 43.dp.toPx()), 2.dp.toPx())
-                drawLine(Color(0xFF4A3543), Offset(cx + 7.dp.toPx(), base - 43.dp.toPx()), Offset(cx + 15.dp.toPx(), base - 46.dp.toPx()), 2.dp.toPx())
-                drawCircle(Color(0xFFE6A7B3), 3.5.dp.toPx(), Offset(cx, base - 35.dp.toPx()))
-                drawLine(Color(0xFF4A3543), Offset(cx - 6.dp.toPx(), base - 29.dp.toPx()), Offset(cx, base - 32.dp.toPx()), 1.6.dp.toPx())
-                drawLine(Color(0xFF4A3543), Offset(cx, base - 32.dp.toPx()), Offset(cx + 6.dp.toPx(), base - 29.dp.toPx()), 1.6.dp.toPx())
-                drawCircle(Color(0xFF9A897F).copy(alpha = .45f), 7.dp.toPx(), Offset(cx + 18.dp.toPx(), base - 52.dp.toPx()))
-                drawCircle(Color(0xFF9A897F).copy(alpha = .42f), 5.dp.toPx(), Offset(cx - 22.dp.toPx(), base - 25.dp.toPx()))
-            }
-        }
+    when (kind) {
+        PetKind.DOG_HUNGRY -> StorybookPetAvatar(
+            species = PetSpecies.PUPPY,
+            state = PetVisualState.HUNGRY,
+            modifier = Modifier.size(104.dp),
+        )
+        PetKind.CAT_DIRTY -> StorybookPetAvatar(
+            species = PetSpecies.KITTEN,
+            state = PetVisualState.DIRTY,
+            modifier = Modifier.size(104.dp),
+        )
     }
 }
 
 @Composable
 private fun MeadowCanvas(modifier: Modifier = Modifier) {
-    Canvas(modifier) {
-        drawRect(Brush.verticalGradient(listOf(Color(0xFFF7DFF2), Color(0xFFE7E0FF), Color(0xFFCFE9C9))))
-
-        val farHill = Path().apply {
-            moveTo(0f, size.height * .36f)
-            quadraticBezierTo(size.width * .23f, size.height * .22f, size.width * .43f, size.height * .36f)
-            quadraticBezierTo(size.width * .66f, size.height * .18f, size.width, size.height * .35f)
-            lineTo(size.width, size.height * .54f)
-            lineTo(0f, size.height * .54f)
-            close()
-        }
-        drawPath(farHill, Color(0xFFC5B9E3))
-
-        val grass = Path().apply {
-            moveTo(0f, size.height * .43f)
-            quadraticBezierTo(size.width * .24f, size.height * .36f, size.width * .48f, size.height * .48f)
-            quadraticBezierTo(size.width * .76f, size.height * .34f, size.width, size.height * .47f)
-            lineTo(size.width, size.height)
-            lineTo(0f, size.height)
-            close()
-        }
-        drawPath(grass, Color(0xFFCCE7BC))
-
-        drawRect(Color(0xFF9B6F56), Offset(size.width * .10f, size.height * .30f), Size(size.width * .07f, size.height * .35f))
-        drawCircle(Color(0xFF8BC87E), size.width * .15f, Offset(size.width * .13f, size.height * .25f))
-        drawCircle(Color(0xFFA3D98D), size.width * .12f, Offset(size.width * .22f, size.height * .26f))
-
-        drawOval(Color(0xFF8BD1DD), Offset(size.width * .58f, size.height * .58f), Size(size.width * .34f, size.height * .16f))
-        drawOval(Color(0xFFBCE7EC), Offset(size.width * .61f, size.height * .60f), Size(size.width * .27f, size.height * .10f))
-
-        drawRoundRect(Color(0xFFFFF0F2), Offset(size.width * .72f, size.height * .33f), Size(size.width * .20f, size.height * .22f), CornerRadius(22.dp.toPx()))
-        val roof = Path().apply {
-            moveTo(size.width * .69f, size.height * .37f)
-            lineTo(size.width * .82f, size.height * .27f)
-            lineTo(size.width * .95f, size.height * .37f)
-            close()
-        }
-        drawPath(roof, Color(0xFFEFAED1))
-        drawRoundRect(Color(0xFFC98CB4), Offset(size.width * .79f, size.height * .43f), Size(size.width * .07f, size.height * .12f), CornerRadius(14.dp.toPx()))
-
-        repeat(6) { i ->
-            val x = size.width * (.12f + i * .14f)
-            drawCircle(Color.White.copy(alpha = .90f), 3.dp.toPx(), Offset(x, size.height * (.60f + (i % 2) * .09f)))
-            drawCircle(Color(0xFFF5C4D5), 2.dp.toPx(), Offset(x + 3.dp.toPx(), size.height * (.60f + (i % 2) * .09f)))
-        }
-    }
+    ApprovedEnvironmentArtwork(
+        environment = PetEnvironmentArtwork.GARDEN,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -358,9 +283,9 @@ private fun CareActions(onFeed: () -> Unit, onClean: () -> Unit, onPlay: () -> U
             Text("Give them some care ♥", color = EveluneInk, fontFamily = FontFamily.Serif, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             Text("Their faces and thought bubbles tell you what they need.", color = EveluneMuted, fontSize = 13.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                CareAction("🍲", "Feed", "Take them to the Kitchen", Modifier.weight(1f), onClick = onFeed)
-                CareAction("🚿", "Clean", "Take them to the Garden", Modifier.weight(1f), onClick = onClean)
-                CareAction("🎾", "Play", "Take them to the Playroom", Modifier.weight(1f), onClick = onPlay)
+                CareAction("feed", "Feed", "Take them to the Kitchen", Modifier.weight(1f), onClick = onFeed)
+                CareAction("clean", "Clean", "Take them to the Garden", Modifier.weight(1f), onClick = onClean)
+                CareAction("play", "Play", "Take them to the Playroom", Modifier.weight(1f), onClick = onPlay)
             }
         }
     }
@@ -368,7 +293,7 @@ private fun CareActions(onFeed: () -> Unit, onClean: () -> Unit, onPlay: () -> U
 
 @Composable
 private fun CareAction(
-    icon: String,
+    kind: String,
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
@@ -382,7 +307,7 @@ private fun CareAction(
         shape = RoundedCornerShape(21.dp),
     ) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(icon, fontSize = 26.sp)
+            PetCareArtwork(kind, Modifier.size(38.dp))
             Text(title, color = EveluneInk, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text(subtitle, color = EveluneMuted, fontSize = 11.sp, lineHeight = 14.sp)
         }
@@ -470,22 +395,15 @@ private fun HatchEggScreen(
 @Composable
 private fun EggArtwork() {
     Box(Modifier.fillMaxWidth().height(300.dp), contentAlignment = Alignment.Center) {
-        Canvas(Modifier.fillMaxSize()) {
-            drawCircle(Color(0xFFF6CFF0).copy(alpha = .42f), radius = size.width * .31f, center = center)
-            drawCircle(Color(0xFFFFEED6).copy(alpha = .72f), radius = size.width * .22f, center = center)
-            drawOval(Color(0xFFC99163), Offset(size.width * .24f, size.height * .68f), Size(size.width * .52f, size.height * .16f))
-            drawOval(Color(0xFFFFF8EE), Offset(size.width * .31f, size.height * .14f), Size(size.width * .38f, size.height * .60f))
-            drawOval(Color(0xFFFCE8EA), Offset(size.width * .34f, size.height * .18f), Size(size.width * .32f, size.height * .52f), style = Stroke(width = 2.dp.toPx()))
-            val crack = Path().apply {
-                moveTo(size.width * .54f, size.height * .27f)
-                lineTo(size.width * .49f, size.height * .38f)
-                lineTo(size.width * .56f, size.height * .45f)
-                lineTo(size.width * .48f, size.height * .54f)
-                lineTo(size.width * .54f, size.height * .63f)
+        Surface(
+            modifier = Modifier.size(270.dp),
+            shape = CircleShape,
+            color = Color(0xFFF6CFF0).copy(alpha = .30f),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                PetEggArtwork(Modifier.size(210.dp))
             }
-            drawPath(crack, Color(0xFFE6B495), style = Stroke(width = 2.dp.toPx()))
         }
-        Text("♥", color = Color(0xFFE9A8BA), fontSize = 54.sp, modifier = Modifier.padding(top = 8.dp))
     }
 }
 
