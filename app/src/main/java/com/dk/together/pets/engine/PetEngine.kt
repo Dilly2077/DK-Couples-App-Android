@@ -10,6 +10,11 @@ class UuidIdSource : IdSource {
     override fun nextId(prefix: String): String = "$prefix-${UUID.randomUUID()}"
 }
 
+data class PetCareApplyResult(
+    val pet: PetInstance,
+    val applied: Boolean,
+)
+
 class PetEngine(
     private val repository: PetEngineRepository,
     private val random: RandomSource = KotlinRandomSource(),
@@ -104,6 +109,39 @@ class PetEngine(
     fun feed(id: String, nowEpochMs: Long): PetInstance {
         val pet = requireNotNull(repository.findPet(id)) { "Unknown pet id: $id" }
         return needsEngine.feed(pet, nowEpochMs).also(repository::savePet)
+    }
+
+    fun feed(id: String, hungerReduction: Double, nowEpochMs: Long): PetInstance {
+        val pet = requireNotNull(repository.findPet(id)) { "Unknown pet id: $id" }
+        return needsEngine.feed(pet, nowEpochMs, hungerReduction).also(repository::savePet)
+    }
+
+    /**
+     * Applies one feeding exactly once for a stable interaction id. This is used by the feeding
+     * coordinator so process retries cannot reduce hunger multiple times.
+     */
+    fun feedOnce(
+        id: String,
+        interactionId: String,
+        hungerReduction: Double,
+        nowEpochMs: Long,
+    ): PetCareApplyResult {
+        require(interactionId.isNotBlank())
+        val current = requireNotNull(repository.findPet(id)) { "Unknown pet id: $id" }
+        if (repository.hasCareEvent(interactionId)) {
+            return PetCareApplyResult(current, applied = false)
+        }
+
+        val fed = needsEngine.feed(current, nowEpochMs, hungerReduction)
+        val applied = repository.savePetForCare(
+            pet = fed,
+            interactionId = interactionId,
+            careType = "FEED",
+        )
+        return PetCareApplyResult(
+            pet = if (applied) fed else requireNotNull(repository.findPet(id)),
+            applied = applied,
+        )
     }
 
     fun clean(id: String, nowEpochMs: Long): PetInstance {

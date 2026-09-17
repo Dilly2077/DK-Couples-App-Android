@@ -5,39 +5,19 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-/**
- * Durable local repository for the pet engine.
- *
- * This is intentionally not wired into the current UI yet, but it is ready for the later Pets
- * integration. Hatch timers therefore survive process death/reboots because absolute timestamps,
- * hatch history, and owned pets are stored on disk.
- */
+/** Durable local repository for the pet engine. */
 class AndroidPetEngineRepository(context: Context) : PetEngineRepository {
     private val helper = Db(context.applicationContext)
 
     override fun loadHistory(): HatchHistory {
         helper.readableDatabase.query(
             "hatch_history",
-            arrayOf(
-                "total_claimed",
-                "owned_species",
-                "consecutive_duplicates",
-                "since_legendary",
-                "since_dragon"
-            ),
-            "id = 1",
-            null,
-            null,
-            null,
-            null
+            arrayOf("total_claimed", "owned_species", "consecutive_duplicates", "since_legendary", "since_dragon"),
+            "id = 1", null, null, null, null
         ).use { cursor ->
             if (!cursor.moveToFirst()) return HatchHistory()
-            val owned = cursor.getString(1)
-                .orEmpty()
-                .split(',')
-                .filter { it.isNotBlank() }
-                .mapNotNull { value -> runCatching { PetSpecies.valueOf(value) }.getOrNull() }
-                .toSet()
+            val owned = cursor.getString(1).orEmpty().split(',').filter { it.isNotBlank() }
+                .mapNotNull { value -> runCatching { PetSpecies.valueOf(value) }.getOrNull() }.toSet()
             return HatchHistory(
                 totalClaimedHatches = cursor.getInt(0),
                 ownedSpecies = owned,
@@ -50,8 +30,7 @@ class AndroidPetEngineRepository(context: Context) : PetEngineRepository {
 
     override fun saveHistory(history: HatchHistory) {
         helper.writableDatabase.insertWithOnConflict(
-            "hatch_history",
-            null,
+            "hatch_history", null,
             ContentValues().apply {
                 put("id", 1)
                 put("total_claimed", history.totalClaimedHatches)
@@ -66,14 +45,8 @@ class AndroidPetEngineRepository(context: Context) : PetEngineRepository {
 
     override fun loadActiveHatch(): HatchSession? {
         helper.readableDatabase.query(
-            "active_hatch",
-            arrayOf("id", "species", "started_at", "ends_at", "claimed_at"),
-            null,
-            null,
-            null,
-            null,
-            "started_at DESC",
-            "1"
+            "active_hatch", arrayOf("id", "species", "started_at", "ends_at", "claimed_at"),
+            null, null, null, null, "started_at DESC", "1"
         ).use { cursor ->
             if (!cursor.moveToFirst()) return null
             val claimedIndex = cursor.getColumnIndexOrThrow("claimed_at")
@@ -88,13 +61,13 @@ class AndroidPetEngineRepository(context: Context) : PetEngineRepository {
     }
 
     override fun saveActiveHatch(session: HatchSession?) {
-        helper.writableDatabase.beginTransaction()
+        val db = helper.writableDatabase
+        db.beginTransaction()
         try {
-            helper.writableDatabase.delete("active_hatch", null, null)
+            db.delete("active_hatch", null, null)
             if (session != null) {
-                helper.writableDatabase.insertOrThrow(
-                    "active_hatch",
-                    null,
+                db.insertOrThrow(
+                    "active_hatch", null,
                     ContentValues().apply {
                         put("id", session.id)
                         put("species", session.species.name)
@@ -104,48 +77,69 @@ class AndroidPetEngineRepository(context: Context) : PetEngineRepository {
                     }
                 )
             }
-            helper.writableDatabase.setTransactionSuccessful()
+            db.setTransactionSuccessful()
         } finally {
-            helper.writableDatabase.endTransaction()
+            db.endTransaction()
         }
     }
 
     override fun loadPets(): List<PetInstance> {
         val pets = mutableListOf<PetInstance>()
-        helper.readableDatabase.query(
-            "pets",
-            PET_COLUMNS,
-            null,
-            null,
-            null,
-            null,
-            "hatched_at ASC"
-        ).use { cursor ->
-            while (cursor.moveToNext()) pets += cursor.toPet()
-        }
+        helper.readableDatabase.query("pets", PET_COLUMNS, null, null, null, null, "hatched_at ASC")
+            .use { cursor -> while (cursor.moveToNext()) pets += cursor.toPet() }
         return pets
     }
 
     override fun savePet(pet: PetInstance) {
         helper.writableDatabase.insertWithOnConflict(
-            "pets",
-            null,
-            pet.toValues(),
-            SQLiteDatabase.CONFLICT_REPLACE
+            "pets", null, pet.toValues(), SQLiteDatabase.CONFLICT_REPLACE
         )
     }
 
     override fun findPet(id: String): PetInstance? {
         helper.readableDatabase.query(
-            "pets",
-            PET_COLUMNS,
-            "id = ?",
-            arrayOf(id),
-            null,
-            null,
-            null,
-            "1"
+            "pets", PET_COLUMNS, "id = ?", arrayOf(id), null, null, null, "1"
         ).use { cursor -> return if (cursor.moveToFirst()) cursor.toPet() else null }
+    }
+
+    override fun hasCareEvent(interactionId: String): Boolean {
+        helper.readableDatabase.query(
+            "pet_care_events", arrayOf("interaction_id"), "interaction_id = ?", arrayOf(interactionId),
+            null, null, null, "1"
+        ).use { cursor -> return cursor.moveToFirst() }
+    }
+
+    override fun savePetForCare(pet: PetInstance, interactionId: String, careType: String): Boolean {
+        require(interactionId.isNotBlank())
+        require(careType.isNotBlank())
+        val db = helper.writableDatabase
+        db.beginTransaction()
+        try {
+            db.query(
+                "pet_care_events", arrayOf("interaction_id"), "interaction_id = ?", arrayOf(interactionId),
+                null, null, null, "1"
+            ).use { cursor ->
+                if (cursor.moveToFirst()) {
+                    db.setTransactionSuccessful()
+                    return false
+                }
+            }
+
+            db.insertWithOnConflict("pets", null, pet.toValues(), SQLiteDatabase.CONFLICT_REPLACE)
+            db.insertOrThrow(
+                "pet_care_events", null,
+                ContentValues().apply {
+                    put("interaction_id", interactionId)
+                    put("pet_id", pet.id)
+                    put("care_type", careType)
+                    put("applied_at", System.currentTimeMillis())
+                }
+            )
+            db.setTransactionSuccessful()
+            return true
+        } finally {
+            db.endTransaction()
+        }
     }
 
     private fun PetInstance.toValues(): ContentValues = ContentValues().apply {
@@ -180,7 +174,7 @@ class AndroidPetEngineRepository(context: Context) : PetEngineRepository {
         lastNeedsUpdateEpochMs = getLong(getColumnIndexOrThrow("last_needs_update"))
     )
 
-    private class Db(context: Context) : SQLiteOpenHelper(context, "evelune_pets.db", null, 1) {
+    private class Db(context: Context) : SQLiteOpenHelper(context, "evelune_pets.db", null, 2) {
         override fun onCreate(db: SQLiteDatabase) {
             db.execSQL(
                 """
@@ -223,28 +217,34 @@ class AndroidPetEngineRepository(context: Context) : PetEngineRepository {
                 )
                 """.trimIndent()
             )
+            createCareEvents(db)
             db.execSQL(
                 "INSERT INTO hatch_history (id, total_claimed, owned_species, consecutive_duplicates, since_legendary, since_dragon) VALUES (1, 0, '', 0, 0, 0)"
             )
         }
 
-        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+            if (oldVersion < 2) createCareEvents(db)
+        }
+
+        private fun createCareEvents(db: SQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS pet_care_events (
+                    interaction_id TEXT PRIMARY KEY,
+                    pet_id TEXT NOT NULL,
+                    care_type TEXT NOT NULL,
+                    applied_at INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+        }
     }
 
     private companion object {
         val PET_COLUMNS = arrayOf(
-            "id",
-            "species",
-            "nickname",
-            "hatched_at",
-            "room",
-            "position_x",
-            "position_y",
-            "facing",
-            "behaviour",
-            "hunger",
-            "dirtiness",
-            "last_needs_update"
+            "id", "species", "nickname", "hatched_at", "room", "position_x", "position_y",
+            "facing", "behaviour", "hunger", "dirtiness", "last_needs_update"
         )
     }
 }
