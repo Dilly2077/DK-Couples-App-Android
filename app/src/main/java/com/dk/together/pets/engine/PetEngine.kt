@@ -116,6 +116,11 @@ class PetEngine(
         return needsEngine.feed(pet, nowEpochMs, hungerReduction).also(repository::savePet)
     }
 
+    fun careWasApplied(interactionId: String): Boolean {
+        require(interactionId.isNotBlank())
+        return repository.hasCareEvent(interactionId)
+    }
+
     /**
      * Applies one feeding exactly once for a stable interaction id. This is used by the feeding
      * coordinator so process retries cannot reduce hunger multiple times.
