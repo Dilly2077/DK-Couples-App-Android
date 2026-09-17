@@ -1,5 +1,6 @@
 package com.dk.together.ui
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -91,9 +92,7 @@ fun PersistentPetShopScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
-                PetShopHeader(onBack = onBack)
-            }
+            item { PetShopHeader(onBack = onBack) }
             item {
                 ProgressionPanel(
                     balance = balance,
@@ -155,28 +154,55 @@ fun PetProgressionOverviewCard(
     val global = rewardEngine.globalProgress()
     val pet = petEngine.pets(System.currentTimeMillis()).firstOrNull()
     val bond = pet?.let { rewardEngine.petProgress(it.id) }
+    val seen = remember { context.getSharedPreferences("evelune_progression_seen", Context.MODE_PRIVATE) }
+    var globalLevelsGained by remember { mutableStateOf(0) }
+    var petLevelsGained by remember { mutableStateOf(0) }
 
-    Surface(
-        onClick = onShop,
+    LaunchedEffect(global.level, pet?.id, bond?.progress?.level) {
+        val previousGlobal = seen.getInt("global_level", global.level)
+        globalLevelsGained = (global.level - previousGlobal).coerceAtLeast(0)
+        seen.edit().putInt("global_level", global.level).apply()
+
+        if (pet != null && bond != null) {
+            val key = "pet_level_${pet.id}"
+            val previousPet = seen.getInt(key, bond.progress.level)
+            petLevelsGained = (bond.progress.level - previousPet).coerceAtLeast(0)
+            seen.edit().putInt(key, bond.progress.level).apply()
+        } else {
+            petLevelsGained = 0
+        }
+    }
+
+    Column(
         modifier = modifier.fillMaxWidth(),
-        color = EveluneCard,
-        shape = RoundedCornerShape(26.dp),
-        shadowElevation = 2.dp,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(15.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+        RewardLevelUpNotice(
+            globalLevelsGained = globalLevelsGained,
+            petLevelsGained = petLevelsGained,
+        )
+        Surface(
+            onClick = onShop,
+            modifier = Modifier.fillMaxWidth(),
+            color = EveluneCard,
+            shape = RoundedCornerShape(26.dp),
+            shadowElevation = 2.dp,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Your Evelune journey", color = EveluneInk, fontFamily = FontFamily.Serif, fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                    Text("XP, pet bond and your shared Pet Coin wallet", color = EveluneMuted, fontSize = 11.sp)
+            Column(
+                modifier = Modifier.padding(15.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Your Evelune journey", color = EveluneInk, fontFamily = FontFamily.Serif, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                        Text("XP, pet bond and your shared Pet Coin wallet", color = EveluneMuted, fontSize = 11.sp)
+                    }
+                    Surface(shape = RoundedCornerShape(18.dp), color = EveluneRosePale) {
+                        Text("Shop  ›", color = EveluneRoseDeep, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                    }
                 }
-                Surface(shape = RoundedCornerShape(18.dp), color = EveluneRosePale) {
-                    Text("Shop  ›", color = EveluneRoseDeep, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
-                }
+                ProgressionPanel(balance, global, bond, compact = true)
             }
-            ProgressionPanel(balance, global, bond, compact = true)
         }
     }
 }
@@ -214,15 +240,9 @@ private fun ProgressionPanel(
                 StatPill("🪙", "Pet Coins", balance.petCoins.toString(), Modifier.weight(1f))
                 StatPill("♥", "Pet Bond", petProgress?.let { "Lv. ${it.progress.level}" } ?: "—", Modifier.weight(1f))
             }
-            XpProgressRow(
-                title = "Evelune XP",
-                progress = globalProgress,
-            )
+            XpProgressRow("Evelune XP", globalProgress)
             if (!compact && petProgress != null) {
-                XpProgressRow(
-                    title = "Pet Bond XP",
-                    progress = petProgress.progress,
-                )
+                XpProgressRow("Pet Bond XP", petProgress.progress)
             }
         }
     }
