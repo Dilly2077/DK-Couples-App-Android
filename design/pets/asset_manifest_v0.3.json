@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 3,
+  "project": "Evelune",
+  "pack": "Pet Assets v0.3",
+  "branch": "pet-assets-v0.3",
+  "status": "style_locked_environments_approved_interaction_art_pending",
+  "canonicalStyle": {
+    "description": "Soft pastel illustrated storybook look using pink, lavender, cream, warm wood and spring greens; cozy floral decor; rounded pet furniture; paw and heart motifs; gentle warm daylight; polished but uncluttered.",
+    "rejectStyle": "Earlier green-and-cream plastic/3D concept direction",
+    "sourceOfTruth": "design/pets/ASSET_PACK_V0.3.md"
+  },
+  "environments": [
+    {
+      "key": "environment_playroom",
+      "displayName": "Living Room / Playroom",
+      "status": "approved",
+      "purpose": "default indoor pet environment and play space",
+      "expectedRepoPath": "design/pets/source/environments/playroom/playroom_bg_v1.webp"
+    },
+    {
+      "key": "environment_kitchen",
+      "displayName": "Kitchen",
+      "status": "approved",
+      "purpose": "feeding environment",
+      "expectedRepoPath": "design/pets/source/environments/kitchen/kitchen_bg_v1.webp"
+    },
+    {
+      "key": "environment_garden",
+      "displayName": "Outdoor Garden",
+      "status": "approved",
+      "purpose": "free roam and outdoor play",
+      "expectedRepoPath": "design/pets/source/environments/garden/garden_bg_v1.webp"
+    },
+    {
+      "key": "environment_spa_hot_tub",
+      "displayName": "Outdoor Hot-Tub Spa",
+      "status": "approved",
+      "purpose": "primary cleaning mechanic",
+      "expectedRepoPath": "design/pets/source/environments/spa/spa_hot_tub_bg_v1.webp"
+    }
+  ],
+  "environmentLayers": {
+    "spa": [
+      "spa_background",
+      "hot_tub_back_rim",
+      "pet_layer",
+      "hot_tub_water_overlay",
+      "hot_tub_bubbles_overlay",
+      "hot_tub_front_rim",
+      "spa_foreground"
+    ],
+    "kitchen": [
+      "kitchen_background",
+      "kitchen_back_furniture",
+      "feeding_seat_anchor",
+      "feeding_station",
+      "pet_layer",
+      "kitchen_foreground"
+    ]
+  },
+  "foods": [
+    "food_kibble",
+    "food_fish",
+    "food_carrot",
+    "food_berry_bowl",
+    "food_apple_slices",
+    "food_milk_bowl",
+    "food_biscuit",
+    "food_salad_bowl",
+    "food_cupcake_treat",
+    "food_premium_feast_tray"
+  ],
+  "cleaningProps": [
+    "cleaning_sponge",
+    "cleaning_soap_bottle",
+    "cleaning_bubbles",
+    "cleaning_splash",
+    "cleaning_sparkle",
+    "dirt_overlay_01",
+    "dirt_overlay_02",
+    "cleaning_towel_stack"
+  ],
+  "playProps": [
+    "toy_basket",
+    "toy_ball",
+    "toy_yarn_ball",
+    "toy_rope",
+    "toy_plush_bone",
+    "toy_tunnel",
+    "toy_frisbee"
+  ],
+  "economyUi": [
+    "pet_coin",
+    "xp_burst",
+    "xp_float",
+    "pet_coin_float",
+    "level_up_badge",
+    "inventory_slot",
+    "shop_tile",
+    "valid_drop_glow",
+    "thought_food",
+    "thought_bath",
+    "thought_play"
+  ],
+  "petVisualStates": [
+    "idle_front",
+    "blink",
+    "walk_left",
+    "walk_right",
+    "happy",
+    "hungry",
+    "dirty",
+    "sleepy",
+    "carried",
+    "seated",
+    "eating",
+    "bathing",
+    "playing",
+    "level_up"
+  ],
+  "firstCarePets": [
+    "mocha",
+    "lumi"
+  ],
+  "rewardModelDependency": {
+    "global": "Evelune XP from meaningful completed app actions",
+    "petSpecific": "Pet Bond XP from direct care/play with a specific pet",
+    "currency": "Pet Coins",
+    "antiFarm": "Do not reward repeated no-op taps or redundant actions"
+  },
+  "generationStatus": {
+    "environmentConcepts": "approved",
+    "environmentBinaryImport": "pending",
+    "foodSheetV03": "pending_generation_in_approved_style",
+    "careToyEconomySheetV03": "pending_generation_in_approved_style",
+    "mochaCareSheetV03": "pending_generation_in_approved_style",
+    "lumiCareSheetV03": "pending_generation_in_approved_style",
+    "thoughtBubbleSheetV03": "pending_generation_in_approved_style",
+    "individualTransparentExports": "pending"
+  }
+}
