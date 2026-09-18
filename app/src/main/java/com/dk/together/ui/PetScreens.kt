@@ -2,13 +2,22 @@ package com.dk.together.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,12 +33,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -50,6 +62,7 @@ import com.dk.together.ui.theme.EveluneRoseDeep
 import com.dk.together.ui.theme.EveluneRosePale
 import kotlinx.coroutines.delay
 import kotlin.math.ceil
+import kotlin.random.Random
 
 private enum class PetPage { WORLD, MEADOWS, HATCH, KITCHEN, GARDEN_CLEAN, PLAYROOM, SHOP }
 
@@ -156,22 +169,104 @@ private fun MeadowWorldCard(onExplore: () -> Unit) {
             }
             Box(Modifier.fillMaxWidth().height(365.dp).clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))) {
                 ApprovedEnvironmentArtwork(PetEnvironmentArtwork.GARDEN, Modifier.fillMaxSize())
-                PetPreview("Hungry", "Mocha", "Lv. 3", PetSpecies.PUPPY, PetVisualState.HUNGRY, Modifier.align(Alignment.BottomStart).padding(start = 36.dp, bottom = 38.dp))
-                PetPreview("Bath?", "Lumi", "Lv. 2", PetSpecies.KITTEN, PetVisualState.DIRTY, Modifier.align(Alignment.BottomEnd).padding(end = 42.dp, bottom = 38.dp))
+                RoamingPetPreview(
+                    need = "Hungry",
+                    name = "Mocha",
+                    level = "Lv. 3",
+                    species = PetSpecies.PUPPY,
+                    restingState = PetVisualState.HUNGRY,
+                    startX = 0.28f,
+                    minX = 0.15f,
+                    maxX = 0.45f,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                RoamingPetPreview(
+                    need = "Bath?",
+                    name = "Lumi",
+                    level = "Lv. 2",
+                    species = PetSpecies.KITTEN,
+                    restingState = PetVisualState.DIRTY,
+                    startX = 0.72f,
+                    minX = 0.55f,
+                    maxX = 0.85f,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }
 }
 
 @Composable
-private fun PetPreview(need: String, name: String, level: String, species: PetSpecies, state: PetVisualState, modifier: Modifier) {
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Surface(shape = RoundedCornerShape(18.dp), color = Color.White.copy(alpha = .96f), shadowElevation = 2.dp) { Text(need, color = EveluneInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(12.dp, 7.dp)) }
-        StorybookPetAvatar(species, state, Modifier.size(104.dp))
-        Surface(shape = RoundedCornerShape(16.dp), color = Color.White.copy(alpha = .94f)) {
-            Column(Modifier.padding(14.dp, 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(name, color = EveluneInk, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                Text(level, color = EveluneMuted, fontSize = 11.sp)
+private fun RoamingPetPreview(
+    need: String,
+    name: String,
+    level: String,
+    species: PetSpecies,
+    restingState: PetVisualState,
+    startX: Float,
+    minX: Float,
+    maxX: Float,
+    modifier: Modifier = Modifier,
+) {
+    var targetX by remember(species) { mutableFloatStateOf(startX) }
+    var durationMs by remember(species) { mutableIntStateOf(2200) }
+    var walking by remember(species) { mutableStateOf(false) }
+    var facingRight by remember(species) { mutableStateOf(true) }
+
+    LaunchedEffect(species) {
+        while (true) {
+            delay(Random.nextLong(900L, 2200L))
+            val next = Random.nextDouble(minX.toDouble(), maxX.toDouble()).toFloat()
+            if (kotlin.math.abs(next - targetX) < 0.05f) continue
+            facingRight = next > targetX
+            durationMs = (1600 + kotlin.math.abs(next - targetX) * 4200).toInt().coerceIn(1700, 3200)
+            walking = true
+            targetX = next
+            delay(durationMs.toLong())
+            walking = false
+        }
+    }
+
+    val animatedX by animateFloatAsState(
+        targetValue = targetX,
+        animationSpec = tween(durationMillis = durationMs, easing = LinearEasing),
+        label = "petPreviewX-$name",
+    )
+    val bobTransition = rememberInfiniteTransition(label = "petPreviewBob-$name")
+    val bob by bobTransition.animateFloat(
+        initialValue = -2.5f,
+        targetValue = 2.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(260, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "petPreviewBobOffset-$name",
+    )
+
+    BoxWithConstraints(modifier) {
+        val petState = when {
+            walking && facingRight -> PetVisualState.WALK_RIGHT
+            walking -> PetVisualState.WALK_LEFT
+            else -> restingState
+        }
+        Column(
+            modifier = Modifier
+                .offset(
+                    x = maxWidth * animatedX - 54.dp,
+                    y = maxHeight * 0.43f,
+                )
+                .graphicsLayer { translationY = if (walking) bob else 0f },
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Surface(shape = RoundedCornerShape(18.dp), color = Color.White.copy(alpha = .96f), shadowElevation = 2.dp) {
+                Text(need, color = EveluneInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(12.dp, 7.dp))
+            }
+            StorybookPetAvatar(species, petState, Modifier.size(104.dp))
+            Surface(shape = RoundedCornerShape(16.dp), color = Color.White.copy(alpha = .94f)) {
+                Column(Modifier.padding(14.dp, 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(name, color = EveluneInk, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(level, color = EveluneMuted, fontSize = 11.sp)
+                }
             }
         }
     }

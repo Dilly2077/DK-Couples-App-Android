@@ -34,6 +34,8 @@ enum class PetVisualState {
     EATING,
     BATHING,
     PLAYING,
+    WALK_LEFT,
+    WALK_RIGHT,
 }
 
 private const val RUNTIME_PACK = "pets/packs/evelune_pet_assets_v03_runtime.zip"
@@ -179,6 +181,8 @@ private fun basePetEntry(species: PetSpecies, state: PetVisualState): String {
         PetVisualState.HUNGRY -> "hungry"
         PetVisualState.DIRTY -> "dirty"
         PetVisualState.HAPPY, PetVisualState.EATING, PetVisualState.PLAYING, PetVisualState.BATHING -> "happy"
+        PetVisualState.WALK_LEFT -> "walk_left"
+        PetVisualState.WALK_RIGHT -> "walk_right"
         PetVisualState.CARRIED, PetVisualState.SEATED, PetVisualState.IDLE -> "idle_front"
     }
     return "evelune_pet_assets_v0.1/characters/$prefix/${prefix}_${frame}.png"
@@ -203,6 +207,8 @@ private fun expansionPetEntry(species: PetSpecies, state: PetVisualState): Strin
         PetVisualState.HUNGRY -> "hungry"
         PetVisualState.DIRTY -> "dirty"
         PetVisualState.HAPPY, PetVisualState.EATING, PetVisualState.PLAYING, PetVisualState.BATHING -> "happy"
+        PetVisualState.WALK_LEFT -> "walk_left"
+        PetVisualState.WALK_RIGHT -> "walk_right"
         PetVisualState.CARRIED, PetVisualState.SEATED, PetVisualState.IDLE -> "idle_front"
     }
     return "Evelune-pet-expansion-v0.1/$slug/frames/${slug}_${frame}.png"

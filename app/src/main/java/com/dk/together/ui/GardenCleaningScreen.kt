@@ -187,8 +187,13 @@ private fun GardenHotTubScreen(
                             onHotTub(transition.snapPosition)
                         }
                     },
-                ) { carried ->
-                    GardenPetAvatar(pet.species, carried = carried)
+                ) { carried, walking, facingRight ->
+                    GardenPetAvatar(
+                        species = pet.species,
+                        carried = carried,
+                        walking = walking,
+                        facingRight = facingRight,
+                    )
                 }
             }
             Surface(
@@ -421,10 +426,20 @@ private fun GardenScene(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun GardenPetAvatar(species: PetSpecies, carried: Boolean) {
+private fun GardenPetAvatar(
+    species: PetSpecies,
+    carried: Boolean,
+    walking: Boolean,
+    facingRight: Boolean,
+) {
+    val state = when {
+        carried -> PetVisualState.CARRIED
+        walking -> if (facingRight) PetVisualState.WALK_RIGHT else PetVisualState.WALK_LEFT
+        else -> PetVisualState.DIRTY
+    }
     StorybookPetAvatar(
         species = species,
-        state = if (carried) PetVisualState.CARRIED else PetVisualState.DIRTY,
+        state = state,
         modifier = Modifier.size(if (carried) 94.dp else 88.dp),
     )
 }

@@ -12,14 +12,30 @@ android {
         applicationId = "com.dk.evelune"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.8.0"
+        versionCode = 9
+        versionName = "0.9.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Stable non-production key used only for direct/sideload development builds.
+    // Keep this signing identity unchanged and increment versionCode for every shipped APK so
+    // Android can install future Evelune builds as updates instead of separate/rejected apps.
+    signingConfigs {
+        create("eveluneDevUpdate") {
+            storeFile = file("signing/evelune-dev-update.jks")
+            storePassword = "EveluneUpdate2026!"
+            keyAlias = "evelune_dev"
+            keyPassword = "EveluneUpdate2026!"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("eveluneDevUpdate")
+        }
         release {
+            signingConfig = signingConfigs.getByName("eveluneDevUpdate")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
