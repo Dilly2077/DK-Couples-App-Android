@@ -200,6 +200,8 @@ fun PetDragDropLayer(
 
         val displayX = if (carried) session.position.x.toFloat() else animatedX
         val displayY = if (carried) session.position.y.toFloat() else animatedY
+        val latestDisplayX by rememberUpdatedState(displayX)
+        val latestDisplayY by rememberUpdatedState(displayY)
         val petX = sceneWidth * displayX - petSize / 2
         val petY = sceneHeight * displayY - petSize / 2
 
@@ -217,8 +219,8 @@ fun PetDragDropLayer(
                         onDragStart = {
                             walking = false
                             val current = NormalizedPosition(
-                                x = displayX.toDouble().coerceIn(0.0, 1.0),
-                                y = displayY.toDouble().coerceIn(0.0, 1.0),
+                                x = latestDisplayX.toDouble().coerceIn(0.0, 1.0),
+                                y = latestDisplayY.toDouble().coerceIn(0.0, 1.0),
                             )
                             session = session.copy(position = current)
                             roamingTarget = current
