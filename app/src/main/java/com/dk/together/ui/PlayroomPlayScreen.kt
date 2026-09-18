@@ -211,8 +211,13 @@ private fun PlayroomRoomScreen(
                         }
                     },
                     targetContent = { target, highlighted -> PlayToyTarget(target, highlighted) },
-                ) { carried ->
-                    PlayPetAvatar(pet.species, carried)
+                ) { carried, walking, facingRight ->
+                    PlayPetAvatar(
+                        species = pet.species,
+                        carried = carried,
+                        walking = walking,
+                        facingRight = facingRight,
+                    )
                 }
             }
             Surface(
@@ -436,10 +441,20 @@ private fun PlayroomBackdrop(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun PlayPetAvatar(species: PetSpecies, carried: Boolean) {
+private fun PlayPetAvatar(
+    species: PetSpecies,
+    carried: Boolean,
+    walking: Boolean,
+    facingRight: Boolean,
+) {
+    val state = when {
+        carried -> PetVisualState.CARRIED
+        walking -> if (facingRight) PetVisualState.WALK_RIGHT else PetVisualState.WALK_LEFT
+        else -> PetVisualState.IDLE
+    }
     StorybookPetAvatar(
         species = species,
-        state = if (carried) PetVisualState.CARRIED else PetVisualState.IDLE,
+        state = state,
         modifier = Modifier.fillMaxSize(),
     )
 }
