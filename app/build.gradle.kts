@@ -24,9 +24,9 @@ android {
     signingConfigs {
         create("eveluneDevUpdate") {
             storeFile = file("signing/evelune-dev-update.jks")
-            storePassword = "eveluneDev2026"
+            storePassword = "EveluneUpdate2026!"
             keyAlias = "evelune_dev"
-            keyPassword = "eveluneDev2026"
+            keyPassword = "EveluneUpdate2026!"
         }
     }
 
