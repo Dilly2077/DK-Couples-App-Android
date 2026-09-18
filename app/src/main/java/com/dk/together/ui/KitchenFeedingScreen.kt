@@ -172,8 +172,15 @@ private fun KitchenFeedingScreen(
                                 message = "Seated and ready. Choose some food."
                             }
                         },
-                    ) { carried ->
-                        PetKitchenAvatar(pet.species, carried = carried, seated = false, eating = false)
+                    ) { carried, walking, facingRight ->
+                        PetKitchenAvatar(
+                            species = pet.species,
+                            carried = carried,
+                            seated = false,
+                            eating = false,
+                            walking = walking,
+                            facingRight = facingRight,
+                        )
                     }
                 } else {
                     Box(
@@ -186,6 +193,8 @@ private fun KitchenFeedingScreen(
                                 carried = false,
                                 seated = true,
                                 eating = phase == KitchenPhase.EATING,
+                                walking = false,
+                                facingRight = true,
                             )
                         }
                     }
@@ -316,11 +325,14 @@ private fun PetKitchenAvatar(
     carried: Boolean,
     seated: Boolean,
     eating: Boolean,
+    walking: Boolean,
+    facingRight: Boolean,
 ) {
     val state = when {
         eating -> PetVisualState.EATING
         carried -> PetVisualState.CARRIED
         seated -> PetVisualState.SEATED
+        walking -> if (facingRight) PetVisualState.WALK_RIGHT else PetVisualState.WALK_LEFT
         else -> PetVisualState.IDLE
     }
     StorybookPetAvatar(
