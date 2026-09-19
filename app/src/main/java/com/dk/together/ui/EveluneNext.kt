@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -77,7 +76,7 @@ fun EveluneNextApp() {
     var actor by remember { mutableStateOf(store.currentActor) }
     var destination by remember { mutableStateOf<ContentDestination?>(null) }
     var morePage by remember { mutableStateOf<MorePage?>(null) }
-    val labels = listOf("Home", "Discuss", "Timeline", "Pets", "More")
+    val labels = listOf("Home", "Discuss", "Timeline", "More")
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -89,7 +88,7 @@ fun EveluneNextApp() {
                     labels = labels,
                     onSelect = { index ->
                         selected = index
-                        if (index == 4) morePage = null
+                        if (index == 3) morePage = null
                     },
                 )
             }
@@ -138,9 +137,6 @@ fun EveluneNextApp() {
                 )
                 2 -> MemoryTimelineScreen(
                     social = social,
-                    modifier = Modifier.padding(innerPadding).statusBarsPadding(),
-                )
-                3 -> PetSectionScreen(
                     modifier = Modifier.padding(innerPadding).statusBarsPadding(),
                 )
                 else -> when (morePage) {
@@ -428,7 +424,6 @@ private fun EveluneNavBar(selected: Int, labels: List<String>, onSelect: (Int) -
                     0 -> Icons.Filled.Home
                     1 -> Icons.Filled.Chat
                     2 -> Icons.Filled.DateRange
-                    3 -> Icons.Filled.Pets
                     else -> Icons.Filled.MoreHoriz
                 }
                 Surface(onClick = { onSelect(index) }, color = Color.Transparent, shape = RoundedCornerShape(18.dp)) {
