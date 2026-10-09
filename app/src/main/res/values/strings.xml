@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Duo</string>
+    <string name="duo_note_widget_name">Duo notes</string>
     <string name="duo_note_widget_description">Latest note from your partner</string>
 </resources>
