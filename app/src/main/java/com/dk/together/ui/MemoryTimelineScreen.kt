@@ -9,6 +9,7 @@ import android.os.Build
 import android.provider.MediaStore
 import android.util.Size
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -37,7 +38,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
@@ -98,6 +101,7 @@ internal fun MemoryTimelineScreen(
 ) {
     var refresh by remember { mutableIntStateOf(0) }
     var showAdd by remember { mutableStateOf(false) }
+    var editingMemory by remember { mutableStateOf<MemoryMoment?>(null) }
     val memories = remember(refresh) { social.memories() }
 
     Box(modifier.fillMaxSize().background(EveluneBackground)) {
@@ -129,7 +133,7 @@ internal fun MemoryTimelineScreen(
             }
 
             items(memories, key = { it.id }) { memory ->
-                MemoryMomentCard(memory)
+                MemoryMomentCard(memory, onEdit = { editingMemory = memory })
             }
         }
 
@@ -145,7 +149,8 @@ internal fun MemoryTimelineScreen(
     }
 
     if (showAdd) {
-        AddMemoryDialog(
+        MemoryEditorDialog(
+            initial = null,
             onDismiss = { showAdd = false },
             onSave = { date, title, description, whySpecial, favourite, media ->
                 social.addMemory(
@@ -161,10 +166,30 @@ internal fun MemoryTimelineScreen(
             },
         )
     }
+
+    editingMemory?.let { memory ->
+        MemoryEditorDialog(
+            initial = memory,
+            onDismiss = { editingMemory = null },
+            onSave = { date, title, description, whySpecial, favourite, media ->
+                social.updateMemory(
+                    id = memory.id,
+                    dateMillis = date,
+                    title = title,
+                    description = description,
+                    whySpecial = whySpecial,
+                    favouritePart = favourite,
+                    mediaUris = media,
+                )
+                editingMemory = null
+                refresh++
+            },
+        )
+    }
 }
 
 @Composable
-private fun MemoryMomentCard(memory: MemoryMoment) {
+private fun MemoryMomentCard(memory: MemoryMoment, onEdit: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color(0xFFFFFCFB),
@@ -200,6 +225,11 @@ private fun MemoryMomentCard(memory: MemoryMoment) {
                 if (memory.favouritePart.isNotBlank()) {
                     Text("Favourite part", style = MaterialTheme.typography.labelLarge, color = EveluneRoseDeep)
                     Text(memory.favouritePart, style = MaterialTheme.typography.bodyMedium, color = EveluneMuted)
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    IconButton(onClick = onEdit) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Edit memory", tint = EveluneRoseDeep)
+                    }
                 }
             }
         }
@@ -305,27 +335,69 @@ private fun loadMemoryThumbnail(context: android.content.Context, uri: Uri, mime
     null
 }
 
+private fun mediaDateMillis(context: android.content.Context, uri: Uri): Long? {
+    return try {
+        context.contentResolver.query(
+            uri,
+            arrayOf(MediaStore.MediaColumns.DATE_TAKEN, MediaStore.MediaColumns.DATE_MODIFIED),
+            null,
+            null,
+            null,
+        )?.use { cursor ->
+            if (!cursor.moveToFirst()) return@use null
+            val takenIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DATE_TAKEN)
+            val modifiedIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DATE_MODIFIED)
+            val taken = if (takenIndex >= 0 && !cursor.isNull(takenIndex)) cursor.getLong(takenIndex) else 0L
+            val modifiedSeconds = if (modifiedIndex >= 0 && !cursor.isNull(modifiedIndex)) cursor.getLong(modifiedIndex) else 0L
+            when {
+                taken > 0L -> taken
+                modifiedSeconds > 0L -> modifiedSeconds * 1000L
+                else -> null
+            }
+        }
+    } catch (_: Exception) {
+        null
+    }
+}
+
+private fun startOfLocalDay(epochMillis: Long): Long =
+    Instant.ofEpochMilli(epochMillis)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+        .atStartOfDay(ZoneId.systemDefault())
+        .toInstant()
+        .toEpochMilli()
+
 @Composable
-private fun AddMemoryDialog(
+private fun MemoryEditorDialog(
+    initial: MemoryMoment?,
     onDismiss: () -> Unit,
     onSave: (Long, String, String, String, String, List<String>) -> Unit,
 ) {
     val context = LocalContext.current
-    var dateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var whySpecial by remember { mutableStateOf("") }
-    var favourite by remember { mutableStateOf("") }
-    val media = remember { mutableStateListOf<String>() }
+    var dateMillis by remember(initial?.id) { mutableStateOf(initial?.dateMillis ?: System.currentTimeMillis()) }
+    var dateManuallyEdited by remember(initial?.id) { mutableStateOf(initial != null) }
+    var title by remember(initial?.id) { mutableStateOf(initial?.title.orEmpty()) }
+    var description by remember(initial?.id) { mutableStateOf(initial?.description.orEmpty()) }
+    var whySpecial by remember(initial?.id) { mutableStateOf(initial?.whySpecial.orEmpty()) }
+    var favourite by remember(initial?.id) { mutableStateOf(initial?.favouritePart.orEmpty()) }
+    val media = remember(initial?.id) { mutableStateListOf<String>().apply { addAll(initial?.mediaUris.orEmpty()) } }
 
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(24)) { uris ->
+        var firstMetadataDate: Long? = null
         uris.forEach { uri ->
             try {
                 context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             } catch (_: Exception) {
             }
             val value = uri.toString()
-            if (value !in media) media += value
+            if (value !in media) {
+                media += value
+                if (firstMetadataDate == null) firstMetadataDate = mediaDateMillis(context, uri)
+            }
+        }
+        if (!dateManuallyEdited && firstMetadataDate != null) {
+            dateMillis = startOfLocalDay(firstMetadataDate!!)
         }
     }
 
@@ -343,7 +415,7 @@ private fun AddMemoryDialog(
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Close", tint = EveluneRoseDeep)
                     }
                     Text(
-                        "Add a memory",
+                        if (initial == null) "Add a memory" else "Edit memory",
                         fontFamily = FontFamily.Serif,
                         fontSize = 27.sp,
                         fontWeight = FontWeight.Bold,
@@ -362,6 +434,7 @@ private fun AddMemoryDialog(
                             DatePickerDialog(
                                 context,
                                 { _, year, month, day ->
+                                    dateManuallyEdited = true
                                     dateMillis = LocalDate.of(year, month + 1, day)
                                         .atStartOfDay(ZoneId.systemDefault())
                                         .toInstant()
@@ -385,7 +458,11 @@ private fun AddMemoryDialog(
                     }
 
                     Button(
-                        onClick = { picker.launch(arrayOf("image/*", "video/*")) },
+                        onClick = {
+                            picker.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+                            )
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = EveluneRoseDeep),
                         shape = RoundedCornerShape(19.dp),
                     ) {
@@ -395,10 +472,25 @@ private fun AddMemoryDialog(
                     }
 
                     if (media.isNotEmpty()) {
+                        Text(
+                            "The first selected photo sets the date automatically when metadata is available. You can still change it.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = EveluneMuted,
+                        )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(media, key = { it }) { uri ->
-                                Box(Modifier.size(82.dp).clip(RoundedCornerShape(17.dp))) {
+                                Box(Modifier.size(92.dp).clip(RoundedCornerShape(17.dp))) {
                                     MemoryMediaTile(uri, Modifier.fillMaxSize())
+                                    Surface(
+                                        onClick = { media.remove(uri) },
+                                        modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                                        shape = CircleShape,
+                                        color = Color.Black.copy(alpha = .62f),
+                                    ) {
+                                        Box(Modifier.size(27.dp), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Filled.Close, contentDescription = "Remove media", tint = Color.White, modifier = Modifier.size(17.dp))
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -446,7 +538,7 @@ private fun AddMemoryDialog(
                     colors = ButtonDefaults.buttonColors(containerColor = EveluneRoseDeep),
                     shape = RoundedCornerShape(21.dp),
                 ) {
-                    Text("Save memory")
+                    Text(if (initial == null) "Save memory" else "Save changes")
                 }
             }
         }

@@ -121,6 +121,31 @@ class EveluneSocialStore(context: Context) {
         return id
     }
 
+    fun updateMemory(
+        id: Long,
+        dateMillis: Long,
+        title: String,
+        description: String,
+        whySpecial: String,
+        favouritePart: String,
+        mediaUris: List<String>,
+    ) {
+        val values = ContentValues().apply {
+            put("date_millis", dateMillis)
+            put("title", title.trim())
+            put("description", description.trim())
+            put("why_special", whySpecial.trim())
+            put("favourite_part", favouritePart.trim())
+            put("media_uris", mediaUris.joinToString(URI_SEPARATOR))
+        }
+        helper.writableDatabase.update(
+            "memories",
+            values,
+            "id = ?",
+            arrayOf(id.toString()),
+        )
+    }
+
     fun memories(): List<MemoryMoment> {
         val out = mutableListOf<MemoryMoment>()
         helper.readableDatabase.query(

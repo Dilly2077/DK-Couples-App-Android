@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dk.together.content.EveluneContentBank
+import com.dk.together.data.DuoNoteStore
 import com.dk.together.data.EveluneSocialStore
 import com.dk.together.data.EveluneStore
 import com.dk.together.data.LocalActor
@@ -71,10 +72,12 @@ fun EveluneNextApp() {
     val context = LocalContext.current
     val store = remember { EveluneStore(context) }
     val social = remember { EveluneSocialStore(context) }
+    val notes = remember { DuoNoteStore(context) }
     var selected by remember { mutableIntStateOf(0) }
     var refreshKey by remember { mutableIntStateOf(0) }
     var actor by remember { mutableStateOf(store.currentActor) }
     var destination by remember { mutableStateOf<ContentDestination?>(null) }
+    var showFruitMerge by remember { mutableStateOf(false) }
     var morePage by remember { mutableStateOf<MorePage?>(null) }
     val labels = listOf("Home", "Discuss", "Timeline", "More")
 
@@ -82,7 +85,7 @@ fun EveluneNextApp() {
         modifier = Modifier.fillMaxSize(),
         containerColor = EveluneBackground,
         bottomBar = {
-            if (destination == null) {
+            if (destination == null && !showFruitMerge) {
                 EveluneNavBar(
                     selected = selected,
                     labels = labels,
@@ -95,7 +98,9 @@ fun EveluneNextApp() {
         },
     ) { innerPadding ->
         val open = destination
-        if (open != null) {
+        if (showFruitMerge) {
+            FruitMergeScreen(onBack = { showFruitMerge = false })
+        } else if (open != null) {
             if (open.type == EveluneStore.TYPE_QUESTION) {
                 QuestionChatScreen(
                     questionId = open.id,
@@ -123,9 +128,11 @@ fun EveluneNextApp() {
             when (selected) {
                 0 -> EveluneHome(
                     store = store,
+                    noteStore = notes,
                     actor = actor,
                     refreshKey = refreshKey,
                     onOpen = { destination = it },
+                    onGame = { showFruitMerge = true },
                     modifier = Modifier.padding(innerPadding),
                 )
                 1 -> DiscussChatList(
@@ -171,9 +178,11 @@ fun EveluneNextApp() {
 @Composable
 private fun EveluneHome(
     store: EveluneStore,
+    noteStore: DuoNoteStore,
     actor: LocalActor,
     refreshKey: Int,
     onOpen: (ContentDestination) -> Unit,
+    onGame: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val question = EveluneContentBank.todayQuestion()
@@ -190,7 +199,7 @@ private fun EveluneHome(
             contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(13.dp),
         ) {
-            item { PartnerNoteStrip() }
+            item { PartnerNotesStrip(store = noteStore, actor = actor) }
             item { HomeHero() }
             item {
                 HomeActivityCard(
@@ -206,11 +215,11 @@ private fun EveluneHome(
                 HomeActivityCard(
                     label = "DAILY GAME",
                     symbol = "✦",
-                    title = "Pixel games",
-                    subtitle = "Coming in the next stage.",
+                    title = "Fruit Merge",
+                    subtitle = "Drop, merge and build the biggest fruit.",
                     artwork = HomeArtwork.GAME,
                     completed = false,
-                    onClick = null,
+                    onClick = onGame,
                 )
             }
             item {
